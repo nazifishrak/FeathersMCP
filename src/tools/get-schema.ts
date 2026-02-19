@@ -1,20 +1,21 @@
-import { z } from "zod";
 import { ToolDefinition } from "../types/tool.js";
+import { getSchema } from "../db/database.js";
 
-const schema = {
-  schemaName: z.string().describe("The name of the schema to retrieve"),
-};
+const schema = {};
 
-async function handler({ schemaName }: { schemaName: string }) {
-  // TODO: Implement get-schema logic
+async function handler() {
+  const schemas = getSchema();
+
   return {
-    content: [{ type: "text" as const, text: `Schema for ${schemaName} placeholder` }],
+    content: [
+      { type: "text" as const, text: JSON.stringify(schemas, null, 2) },
+    ],
   };
 }
 
 export const getSchemaTool: ToolDefinition<typeof schema> = {
   name: "get-schema",
-  description: "Get the schema definition for a FeatherJS resource",
+  description: "Get the database schema for FeatherJS documentation tables",
   schema,
   handler,
 };
