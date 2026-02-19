@@ -3,11 +3,7 @@ import { ToolDefinition } from "../types/tool.js";
 import { searchDocumentation } from "../db/database.js";
 
 const schema = {
-  query: z
-    .string()
-    .describe(
-      "The sql query to retrieve relevant documentation content from the database",
-    ),
+  query: z.string().describe("The search query to find in the documentation"),
   category: z
     .string()
     .optional()
