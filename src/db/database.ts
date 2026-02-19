@@ -106,9 +106,9 @@ function findDatabasePath(): string {
   const __dirname = path.dirname(__filename);
 
   const candidates = [
-    // Relative to FeatherMCP project root
-    path.resolve(__dirname, "../../feathers/website/.data/content/contents.sqlite"),
-    // Relative to build output
+    // Relative to FeatherMCP/src/db/ -> workspace root -> feathers
+    path.resolve(__dirname, "../../../feathers/website/.data/content/contents.sqlite"),
+    // Relative to build output (FeatherMCP/build/db/)
     path.resolve(__dirname, "../../../feathers/website/.data/content/contents.sqlite"),
     // Bundled in the project's data directory
     path.resolve(__dirname, "../data/contents.sqlite"),
