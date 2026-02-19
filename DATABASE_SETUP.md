@@ -89,3 +89,189 @@ src/
   index.ts             # Main entry point, registers all tools
 ```
 
+## `src/scripts/ingest.ts`
+
+This is the ingestion script that:
+
+- Reads 4 source tables from the Nuxt-generated `contents.sqlite` database
+- Parses the Nuxt Content minimark JSON format to extract plain text and code blocks
+- Creates a unified `documents` table with 47 rows (one per documentation page)
+- Creates a `documents_fts` FTS5 virtual table (the full-text search index)
+- Uses content hashing so subsequent runs only process changed documents
+
+Run it once before doing anything else:
+
+```bash
+npm run ingest
+```
+
+### `src/db/database.ts`
+
+This is the file you will import from. It provides three exported functions and three exported TypeScript types. It handles:
+
+- Opening the database connection (singleton, read-only)
+- Building FTS5 search queries
+- Sanitizing user input for safe database queries
+- Returning typed results
+
+
+
+## 3. The Three Query Functions
+
+### `searchDocumentation(query, category?, limit?)`
+
+The primary search function. Searches all 47 documentation pages using FTS5 full-text search with BM25 relevance ranking.
+
+**Import:**
+```typescript
+import { searchDocumentation } from "../db/database.js";
+```
+
+**Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | `string` | Yes | The search terms, e.g. `"authentication hooks"` |
+| `category` | `string` | No | Filter by category: `"api"`, `"guides"`, `"cookbook"`, or `"ecosystem"` |
+| `limit` | `number` | No | Max results to return. Defaults to `5` |
+
+**Returns:** `SearchResult[]`
+
+Each `SearchResult` object looks like:
+
+```typescript
+{
+  id: 3,
+  title: "Hooks",
+  category: "api",
+  subcategory: "",
+  content_plain: "Hooks are middleware functions that allow you to intercept...",
+  code_examples: [
+    { language: "typescript", code: "app.service('messages').hooks({ ... })" },
+    { language: "typescript", code: "const myHook = async (context) => { ... }" }
+  ],
+  source_url: "https://v6.feathersjs.com/api/hooks",
+  score: -12.847   // More negative = better match
+}
+```
+
+**Important:** `score` values are negative. A score of `-15.0` is a better match than `-3.0`. Sort by `score` ascending (which is what the query already does).
+
+**Examples:**
+
+```typescript
+// Basic search
+const results = searchDocumentation("hooks");
+
+// Search within a specific category
+const apiResults = searchDocumentation("authentication", "api");
+
+// Search with a custom result limit
+const topTen = searchDocumentation("services", undefined, 10);
+```
+
+---
+
+### `getSchema()`
+
+Returns the structure of the `documents` table. Used by the `get_db_schema` MCP tool to tell the LLM what the database looks like so it can reason about what queries are possible.
+
+**Import:**
+```typescript
+import { getSchema } from "../db/database.js";
+```
+
+**Parameters:** None
+
+**Returns:** `TableSchema[]`
+
+Each `TableSchema` object looks like:
+
+```typescript
+{
+  table_name: "documents",
+  columns: [
+    "id (INTEGER)",
+    "title (TEXT)",
+    "category (TEXT)",
+    "subcategory (TEXT)",
+    "content_md (TEXT)",
+    "content_plain (TEXT)",
+    "code_examples (TEXT)",
+    "keywords (TEXT)",
+    "version (TEXT)",
+    "source_file (TEXT)",
+    "source_url (TEXT)",
+    "content_hash (TEXT)",
+    "created_at (TEXT)"
+  ]
+}
+```
+
+**Example:**
+
+```typescript
+const schema = getSchema();
+// Returns an array with one entry: the documents table and all its columns
+```
+
+---
+
+### `getMenuStructure()`
+
+Returns all 47 documents organized by category. Used by the `get_menu_structure` MCP tool to give the LLM a navigation overview of the documentation so it knows what topics exist.
+
+**Import:**
+```typescript
+import { getMenuStructure } from "../db/database.js";
+```
+
+**Parameters:** None
+
+**Returns:** `Record<string, MenuItem[]>`
+
+This is an object where each key is a category name and each value is an array of documents in that category:
+
+```typescript
+{
+  "api": [
+    { id: 1, title: "Application", category: "api", subcategory: "", source_url: "https://v6.feathersjs.com/api/application" },
+    { id: 2, title: "Services",    category: "api", subcategory: "", source_url: "https://v6.feathersjs.com/api/services" },
+    { id: 3, title: "Hooks",       category: "api", subcategory: "", source_url: "https://v6.feathersjs.com/api/hooks" },
+    // ... 14 more api docs
+  ],
+  "guides": [
+    { id: 18, title: "Getting Started", category: "guides", subcategory: "", source_url: "https://v6.feathersjs.com/guides" },
+    // ... 13 more guide docs
+  ],
+  "cookbook": [
+    // ... 15 cookbook docs
+  ],
+  "ecosystem": [
+    // ... 1 ecosystem doc
+  ]
+}
+```
+
+**Example:**
+
+```typescript
+const menu = getMenuStructure();
+const apiDocs = menu["api"];      // Array of 17 API docs
+const guideDocs = menu["guides"]; // Array of 14 guide docs
+```
+
+---
+
+### `closeDatabase()`
+
+Closes the database connection cleanly. Call this in your server shutdown handler.
+
+```typescript
+import { closeDatabase } from "../db/database.js";
+
+process.on("SIGINT", () => {
+  closeDatabase();
+  process.exit(0);
+});
+```
