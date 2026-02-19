@@ -37,6 +37,11 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
+
+// ES module compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ---------------------------------------------------------------------------
 // CONFIGURATION
@@ -446,7 +451,7 @@ function main(): void {
     ? path.resolve(dbPathArg)
     : path.resolve(
         __dirname,
-        "../../feathers/website/.data/content/contents.sqlite"
+        "../../../feathers/website/.data/content/contents.sqlite"
       );
 
   console.log(`\n📂 Database path: ${dbPath}`);
