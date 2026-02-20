@@ -51,7 +51,23 @@ export interface MenuItem {
   title: string;
   category: string;
   subcategory: string;
+  source_file: string;
   source_url: string;
+}
+
+/** Full document with all fields */
+export interface FullDocument {
+  id: number;
+  title: string;
+  category: string;
+  subcategory: string;
+  content_plain: string;
+  code_examples: Array<{ language: string; code: string }>;
+  keywords: string;
+  version: string;
+  source_file: string;
+  source_url: string;
+  created_at: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -75,7 +91,7 @@ export function getDatabase(dbPath?: string): Database.Database {
   if (!fs.existsSync(resolvedPath)) {
     throw new Error(
       `Documentation database not found at: ${resolvedPath}\n` +
-        `Run the ingestion script first: npm run ingest`
+      `Run the ingestion script first: npm run ingest`
     );
   }
 
@@ -313,7 +329,7 @@ export function getMenuStructure(): Record<string, MenuItem[]> {
 
   const rows = database
     .prepare(
-      `SELECT id, title, category, subcategory, source_url
+      `SELECT id, title, category, subcategory, source_file, source_url
        FROM documents
        ORDER BY category, subcategory, title`
     )
@@ -329,4 +345,71 @@ export function getMenuStructure(): Record<string, MenuItem[]> {
   }
 
   return menu;
+}
+
+/**
+ * Fetch a single document by its source_file path.
+ *
+ * The path is the stem stored during ingestion, e.g.:
+ *   "api/hooks"          → /api/hooks page
+ *   "guides/basics/setup" → /guides/basics/setup page
+ *
+ * Matching is case-insensitive and trims leading slashes so callers can
+ * pass either "api/hooks" or "/api/hooks".
+ *
+ * Returns null if no document matches.
+ */
+export function getDocumentByPath(docPath: string): FullDocument | null {
+  const database = getDatabase();
+
+  // Normalise: strip leading slash, lowercase
+  const normalised = docPath.replace(/^\/+/, "").toLowerCase();
+
+  const raw = database
+    .prepare(
+      `SELECT
+         id, title, category, subcategory, content_plain,
+         code_examples, keywords, version, source_file, source_url, created_at
+       FROM documents
+       WHERE lower(source_file) = ?
+       LIMIT 1`
+    )
+    .get(normalised) as
+    | (Omit<FullDocument, "code_examples"> & { code_examples: string })
+    | undefined;
+
+  if (!raw) return null;
+
+  return {
+    ...raw,
+    code_examples: JSON.parse(raw.code_examples || "[]"),
+  };
+}
+
+/**
+ * Fetch a single document by its numeric ID.
+ * Useful when the caller already has an ID from getMenuStructure().
+ */
+export function getDocumentById(id: number): FullDocument | null {
+  const database = getDatabase();
+
+  const raw = database
+    .prepare(
+      `SELECT
+         id, title, category, subcategory, content_plain,
+         code_examples, keywords, version, source_file, source_url, created_at
+       FROM documents
+       WHERE id = ?
+       LIMIT 1`
+    )
+    .get(id) as
+    | (Omit<FullDocument, "code_examples"> & { code_examples: string })
+    | undefined;
+
+  if (!raw) return null;
+
+  return {
+    ...raw,
+    code_examples: JSON.parse(raw.code_examples || "[]"),
+  };
 }
