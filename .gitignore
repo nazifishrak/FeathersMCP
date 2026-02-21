@@ -5,9 +5,17 @@ dist/
 *.tsbuildinfo
 .DS_Store
 
+# SQLite WAL/SHM files (transient, not needed in git)
+*.sqlite-shm
+*.sqlite-wal
+
 # Environment
 .env
 .env.local
 
 # IDE
 .idea/
+
+# Internal docs (not for GitHub)
+EXPLANATION_FOR_NAM.md
+MVP_STATUS_AND_TODO.md

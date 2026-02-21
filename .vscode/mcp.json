@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "feathersjsDocs": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/build/index.js"
+      ]
+    }
+  }
+}

@@ -388,9 +388,61 @@ Client                          Server
   │                                │
 ```
 
-### Adding the Server to Claude Desktop
+### Connecting to GitHub Copilot in VS Code (Primary Method)
 
-Add this to your Claude Desktop MCP config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+This is the method that works for our team. VS Code reads MCP server config from a `.vscode/mcp.json` file in the workspace root.
+
+**Step 1 — Build the server:**
+```bash
+cd FeatherMCP
+npm run build
+```
+
+**Step 2 — The config file already exists** at `.vscode/mcp.json` in this repo:
+```json
+{
+  "servers": {
+    "feathersjsDocs": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/FeatherMCP/build/index.js"]
+    }
+  }
+}
+```
+
+**Step 3 — Activate in VS Code:**
+- `Cmd+Shift+P` → `Developer: Reload Window`
+- `Cmd+Shift+P` → `MCP: List Servers` — confirm `feathersjsDocs` shows up with status `Running`
+- If it shows `Stopped`, click it and select `Start Server`
+- If prompted to trust the server, click **Allow**
+
+**Step 4 — Use in Copilot Chat:**
+- Open the GitHub Copilot Chat panel
+- Switch to **Agent mode** (the dropdown next to the send button)
+- Click the **Tools** icon (🔧) and enable `feathersjsDocs` tools
+- Ask a question — Copilot will call our tools automatically
+
+**Example prompts to test:**
+```
+How do hooks work in FeathersJS?
+Show me code examples for authentication in FeathersJS.
+What FeathersJS services are available?
+```
+
+**Troubleshooting:**
+| Problem | Fix |
+|---------|-----|
+| Server not in MCP: List Servers | Make sure the workspace folder is `MVP/` (not `FeatherMCP/`) |
+| Server stopped/won't start | Run `npm run build` then `MCP: Reset Cached Tools` |
+| Tools not appearing in chat | Switch to Agent mode in Copilot Chat |
+| Unknown config setting warning | Ignore it — the old `github.copilot.advanced.mcpServers` key is deprecated |
+
+---
+
+### Connecting to Claude Desktop (Alternative)
+
+Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
@@ -403,7 +455,7 @@ Add this to your Claude Desktop MCP config (`~/Library/Application Support/Claud
 }
 ```
 
-Then restart Claude Desktop. It will spawn our server and call tools automatically when users ask about FeathersJS.
+Replace `/absolute/path/to/` with the actual path on your machine. Then restart Claude Desktop.
 
 ---
 
