@@ -1,6 +1,6 @@
-# FeatherMCP — Monday Testing Session Guide
+# FeatherMCP — Testing Session Guide
 
-**Session date:** Monday, Feb 24 (external testers) + Wednesday Feb 25 PUM with TA  
+
 **What we're testing:** FeatherMCP — an MCP server that lets GitHub Copilot search FeathersJS documentation in real time.
 
 ---
