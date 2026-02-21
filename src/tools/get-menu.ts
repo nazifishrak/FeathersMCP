@@ -12,7 +12,7 @@ async function handler() {
 export const getMenuTool: ToolDefinition = {
   name: "get-menu",
   description:
-    "Get the menu/navigation structure of the FeatherJS documentation. This provides a hierarchical view of the documentation topics and their relationships. Called at the start of each session to understand the organization of the content.",
+    "Get the menu/navigation structure of the FeathersJS documentation. This provides a hierarchical view of the documentation topics and their relationships. Called at the start of each session to understand the organization of the content.",
   schema: {},
   handler,
 };

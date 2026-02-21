@@ -101,12 +101,12 @@ export function getDatabase(dbPath?: string): Database.Database {
   // Verify the FTS5 table exists
   const ftsCheck = db
     .prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='documents_fts'"
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='documents_fts'",
     )
     .get();
   if (!ftsCheck) {
     throw new Error(
-      "FTS5 index not found. Run the ingestion script: npm run ingest"
+      "FTS5 index not found. Run the ingestion script: npm run ingest",
     );
   }
 
@@ -159,6 +159,25 @@ export function closeDatabase(): void {
 // ---------------------------------------------------------------------------
 
 /**
+ * Execute a read-only SQL query and return the results.
+ * Use for ad-hoc queries from MCP tools.
+ *
+ * @param sql - The SQL query to execute
+ * @param params - Optional query parameters
+ */
+export function executeQuery(sql: string, params: unknown[] = []): unknown[] {
+  const database = getDatabase();
+
+  // Safety check: only allow SELECT statements
+  const trimmed = sql.trim().toUpperCase();
+  if (!trimmed.startsWith("SELECT")) {
+    throw new Error("Only SELECT queries are allowed");
+  }
+
+  return database.prepare(sql).all(...params);
+}
+
+/**
  * Search the documentation using FTS5 full-text search.
  *
  * HOW BM25 SCORING WORKS:
@@ -177,7 +196,7 @@ export function closeDatabase(): void {
 export function searchDocumentation(
   query: string,
   category?: string,
-  limit: number = 5
+  limit: number = 5,
 ): SearchResult[] {
   const database = getDatabase();
 
@@ -259,23 +278,82 @@ export function searchDocumentation(
 function sanitizeFtsQuery(query: string): string {
   // Common stop words to remove
   const stopWords = new Set([
-    "a", "an", "and", "are", "as", "at", "be", "but", "by", "do",
-    "for", "from", "had", "has", "have", "he", "her", "his", "how",
-    "i", "if", "in", "into", "is", "it", "its", "me", "my", "no",
-    "not", "of", "on", "or", "our", "so", "that", "the", "their",
-    "them", "then", "there", "these", "they", "this", "to", "too",
-    "up", "us", "was", "we", "what", "when", "where", "which",
-    "who", "why", "will", "with", "you", "your", "can", "does",
-    "did", "should", "would", "could", "about",
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "but",
+    "by",
+    "do",
+    "for",
+    "from",
+    "had",
+    "has",
+    "have",
+    "he",
+    "her",
+    "his",
+    "how",
+    "i",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "me",
+    "my",
+    "no",
+    "not",
+    "of",
+    "on",
+    "or",
+    "our",
+    "so",
+    "that",
+    "the",
+    "their",
+    "them",
+    "then",
+    "there",
+    "these",
+    "they",
+    "this",
+    "to",
+    "too",
+    "up",
+    "us",
+    "was",
+    "we",
+    "what",
+    "when",
+    "where",
+    "which",
+    "who",
+    "why",
+    "will",
+    "with",
+    "you",
+    "your",
+    "can",
+    "does",
+    "did",
+    "should",
+    "would",
+    "could",
+    "about",
   ]);
 
   // Extract only alphanumeric words, remove stop words
   const words = query
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")     // Remove special characters
-    .split(/\s+/)                       // Split on whitespace
-    .filter((w) => w.length > 1)        // Remove single chars
-    .filter((w) => !stopWords.has(w));  // Remove stop words
+    .replace(/[^a-z0-9\s]/g, " ") // Remove special characters
+    .split(/\s+/) // Split on whitespace
+    .filter((w) => w.length > 1) // Remove single chars
+    .filter((w) => !stopWords.has(w)); // Remove stop words
 
   if (words.length === 0) return "";
 
@@ -307,7 +385,7 @@ export function getSchema(): TableSchema[] {
       `SELECT name FROM sqlite_master
        WHERE type='table'
        AND name = 'documents'
-       ORDER BY name`
+       ORDER BY name`,
     )
     .all() as Array<{ name: string }>;
 
@@ -335,7 +413,7 @@ export function getMenuStructure(): Record<string, MenuItem[]> {
     .prepare(
       `SELECT id, title, category, subcategory, source_file, source_url
        FROM documents
-       ORDER BY category, subcategory, title`
+       ORDER BY category, subcategory, title`,
     )
     .all() as MenuItem[];
 

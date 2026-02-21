@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ToolDefinition } from "../types/tool.js";
-import { searchDocumentation } from "../db/database.js";
+import { executeQuery, searchDocumentation } from "../db/database.js";
 
 const schema = {
   query: z.string().describe("The search query to find in the documentation"),
@@ -12,17 +12,39 @@ const schema = {
     .number()
     .optional()
     .describe("Maximum number of results to return (default: 5)"),
+
+  query_type: z
+    .enum(["keyword", "sql"])
+    .optional()
+    .describe(
+      "Type of search query: 'keyword' for simple keyword search, 'sql' for raw SQL queries",
+    ),
 };
 
 async function handler({
   query,
   category,
   limit,
+  query_type,
 }: {
   query: string;
   category?: string;
   limit?: number;
+  query_type?: "keyword" | "sql";
 }) {
+  
+  if (query_type === "sql") {
+    const results = executeQuery(query);
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(results, null, 2),
+        },
+      ],
+    };
+  }
+
   const results = searchDocumentation(query, category, limit);
 
   if (results.length === 0) {

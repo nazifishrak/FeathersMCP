@@ -15,7 +15,7 @@ async function handler() {
 
 export const getSchemaTool: ToolDefinition<typeof schema> = {
   name: "get-schema",
-  description: "Get the database schema for FeatherJS documentation tables",
+  description: "Get the database schema for FeathersJS documentation tables",
   schema,
   handler,
 };
