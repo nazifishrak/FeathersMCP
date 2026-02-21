@@ -121,14 +121,17 @@ function findDatabasePath(): string {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
+  // Priority order:
+  // 1. Bundled data/ directory (for end users who installed the package)
+  // 2. Feathers workspace copy (for developers working on the MCP server)
+  //
+  // From src/db/  → ../../data/   = FeatherMCP/data/
+  // From build/db/ → ../../data/  = FeatherMCP/data/
   const candidates = [
-    // Relative to FeatherMCP/src/db/ -> workspace root -> feathers
-    path.resolve(__dirname, "../../../feathers/website/.data/content/contents.sqlite"),
-    // Relative to build output (FeatherMCP/build/db/)
-    path.resolve(__dirname, "../../../feathers/website/.data/content/contents.sqlite"),
-    // Bundled in the project's data directory
-    path.resolve(__dirname, "../data/contents.sqlite"),
+    // Bundled database — this is what users will have
     path.resolve(__dirname, "../../data/contents.sqlite"),
+    // Dev fallback: feathers repo sitting next to FeatherMCP
+    path.resolve(__dirname, "../../../feathers/website/.data/content/contents.sqlite"),
   ];
 
   for (const candidate of candidates) {
@@ -137,7 +140,7 @@ function findDatabasePath(): string {
     }
   }
 
-  // Default fallback
+  // Default fallback — will trigger a clear error in getDatabase()
   return candidates[0];
 }
 
@@ -285,24 +288,25 @@ function sanitizeFtsQuery(query: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Get the database schema — returns all tables and their columns.
+ * Get the database schema — returns the documents table structure.
  * This is what the get_db_schema MCP tool calls.
+ *
+ * Only returns the `documents` table (the unified search table), not the
+ * raw Nuxt Content source tables or internal FTS tables. The LLM only
+ * needs to know about the table it can actually search.
  */
 export function getSchema(): TableSchema[] {
   const database = getDatabase();
 
-  // Get all table names (excluding FTS internal tables)
+  // Only return the documents table — the only table MCP tools query.
+  // The database also contains Nuxt Content internal tables (_content_api,
+  // _content_guides, etc.) and FTS internal tables, but exposing those
+  // to the LLM would be confusing and wasteful.
   const tables = database
     .prepare(
       `SELECT name FROM sqlite_master
        WHERE type='table'
-       AND name NOT LIKE '%_fts%'
-       AND name NOT LIKE 'sqlite_%'
-       AND name NOT LIKE '%_config'
-       AND name NOT LIKE '%_data'
-       AND name NOT LIKE '%_idx'
-       AND name NOT LIKE '%_content'
-       AND name NOT LIKE '%_docsize'
+       AND name = 'documents'
        ORDER BY name`
     )
     .all() as Array<{ name: string }>;

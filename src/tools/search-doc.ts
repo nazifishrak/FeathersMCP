@@ -28,14 +28,58 @@ async function handler({
   if (results.length === 0) {
     return {
       content: [
-        { type: "text" as const, text: `No results found for "${query}"` },
+        {
+          type: "text" as const,
+          text: JSON.stringify({
+            query,
+            category: category || "all",
+            results: [],
+            message:
+              "No results found. Try broader search terms, check spelling, or remove the category filter.",
+            suggestions: [
+              "Use fewer, more specific keywords",
+              "Try related terms (e.g., 'auth' instead of 'login')",
+              "Remove the category filter to search all documentation",
+              "Use get-menu to browse available topics",
+            ],
+          }, null, 2),
+        },
       ],
     };
   }
 
+  // Format results for the LLM — truncate content to avoid blowing up
+  // context windows. Full content_plain can be thousands of chars per doc;
+  // 500 chars gives enough context for the LLM to synthesize an answer.
+  // Code examples are capped at 3 per result for the same reason.
+  const formattedResults = results.map((r, index) => ({
+    rank: index + 1,
+    title: r.title,
+    category: r.category,
+    subcategory: r.subcategory || undefined,
+    source_url: r.source_url,
+    content_snippet:
+      r.content_plain.substring(0, 500) +
+      (r.content_plain.length > 500 ? "..." : ""),
+    code_examples: r.code_examples.slice(0, 3),
+    total_code_examples: r.code_examples.length,
+  }));
+
   return {
     content: [
-      { type: "text" as const, text: JSON.stringify(results, null, 2) },
+      {
+        type: "text" as const,
+        text: JSON.stringify(
+          {
+            query,
+            category: category || "all",
+            result_count: formattedResults.length,
+            results: formattedResults,
+          },
+          null,
+          2,
+        ),
+      },
     ],
   };
 }

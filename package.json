@@ -8,12 +8,15 @@
   "scripts": {
     "build": "tsc && chmod 755 build/index.js",
     "ingest": "tsx src/scripts/ingest.ts",
-    "test:search": "tsx src/scripts/test-search.ts",
-    "test:pipeline": "tsx src/scripts/full-pipeline-test.ts",
+    "test:search": "tsx src/tests/test-search.ts",
+    "test:pipeline": "tsx src/tests/full-pipeline-test.ts",
+    "test:mcp": "tsx src/tests/test-mcp-protocol.ts",
+    "test:css": "tsx src/tests/verify-css-fix.ts",
     "start": "node build/index.js"
   },
   "files": [
-    "build"
+    "build",
+    "data"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
