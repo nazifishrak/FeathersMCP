@@ -23,7 +23,7 @@ We have three hosting sessions. Each one uses a **different MCP client** so we c
 - [ ] MCP server builds without errors (`npm run build`)
 - [ ] Database file (`contents.sqlite`) exists at `feathers/website/.data/content/contents.sqlite`
 - [ ] MCP server starts without crashing (`npm start`)
-- [ ] All tools are registered and callable: `search_documentation`, `get_db_schema`, `get_menu_structure`, and `get_document_by_path` / `get_document_by_id` if implemented
+- [ ] All three tools are registered and callable: `search-doc`, `get-schema`, `get-menu`
 - [ ] The MCP client for your session is configured and connected to FeatherMCP
 - [ ] You've done a dry-run on that client before the session (try a real query and confirm you get a useful answer)
 - [ ] Laptop is charged and running a stable build
@@ -77,11 +77,13 @@ Goal: Get a sense of what topics the documentation covers.
 
 Ask the AI however you want. You're done when you have a useful overview of what you could learn about.
 
+Note for host: this task exercises the `get-menu` tool, which the AI is designed to call before searching. Watch whether the AI uses it automatically or only when the tester explicitly asks for an overview.
+
 ---
 
-**Task 4 (Optional, if time allows) - Find a Code Example or Specific Page (~2 min)**
+**Task 4 (Optional, if time allows) - Find a Code Example (~2 min)**
 
-Goal: Find a real working example of using hooks in FeathersJS, or ask the AI to pull up a specific documentation page (e.g., the hooks page or the authentication page directly).
+Goal: Find a real working example of using hooks in FeathersJS.
 
 Ask the AI however you want. You're done when you have something concrete you could run or adapt.
 
@@ -187,7 +189,7 @@ Check these on your own after the tester leaves.
 - [ ] Server did not crash at any point
 - [ ] Response time felt fast (under 2 seconds)
 - [ ] This session's client behaved the same as other sessions (note differences if not)
-- [ ] If `get_document_by_path` or `get_document_by_id` were tested, did they return the correct page?
+- [ ] Did the AI call `get-menu` or `get-schema` before searching? (this is the intended flow)
 
 **Edge case result (Task 5):**
 - [ ] AI acknowledged uncertainty or said it might not have enough info
@@ -220,7 +222,7 @@ File these as GitHub issues after the session.
 **MCP Client:** [Claude Desktop / Cursor / Open WebUI]
 **Tester:** [Name or identifier]
 **Task:** Task 1 / 2 / 3 / 4 / 5
-**Tool involved:** [search_documentation / get_db_schema / get_menu_structure / get_document_by_path / get_document_by_id / unknown]
+**Tool involved:** [search-doc / get-schema / get-menu / unknown]
 **Tester's exact phrasing:** [What they asked]
 
 **Steps to Reproduce:**
