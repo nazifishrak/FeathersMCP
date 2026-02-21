@@ -1,4 +1,5 @@
 # FeatherMCP MVP Testing Plan
+
 **Session Date:** Monday, Feb 23, 2026 | 5:30-7:00 PM | ICICS 238
 
 ---
@@ -7,21 +8,21 @@
 
 We have three hosting sessions. Each one uses a **different MCP client** so we can see how FeatherMCP behaves across different integrations.
 
-| Session | Hosts | MCP Client to Use |
-|---------|-------|-------------------|
-| A (5:40-6:00) | Members 1 & 2 | Claude Desktop |
-| B (6:05-6:25) | Members 3 & 4 | Cursor (MCP mode) |
-| C (6:30-6:50) | Member 5 | Open WebUI (or whichever client is left) |
+| Session       | Hosts         | MCP Client to Use                        |
+| ------------- | ------------- | ---------------------------------------- |
+| A (5:40-6:00) | Members 1 & 2 | Claude Desktop                           |
+| B (6:05-6:25) | Members 3 & 4 | Cursor (MCP mode)                        |
+| C (6:30-6:50) | Member 5      | Open WebUI (or whichever client is left) |
 
 > If one of these clients is not ready in time, fall back to Claude Desktop for that session and note it in your bug report. The goal is to stress-test the server across different clients, not the clients themselves. If the same search query behaves differently between sessions, that is worth flagging.
 
 ---
 
-## Pre-Session Checklist (Complete Before You Arrive)
+## Pre-Session Checklist
 
-- [ ] Pipeline tests all pass (`npm run test:pipeline`) — this verifies the database and search are working
+- [ ] `contents.sqlite` is packaged with the repo at `feathers/website/.data/content/contents.sqlite` (no need to clone or run the FeathersJS website — the database file is bundled directly)
+- [ ] Pipeline tests all pass (`npm run test:pipeline`) — this verifies the bundled database and search are working
 - [ ] MCP server builds without errors (`npm run build`)
-- [ ] Database file (`contents.sqlite`) exists at `feathers/website/.data/content/contents.sqlite`
 - [ ] MCP server starts without crashing (`npm start`)
 - [ ] All three tools are registered and callable: `search-doc`, `get-schema`, `get-menu`
 - [ ] The MCP client for your session is configured and connected to FeatherMCP
@@ -48,6 +49,7 @@ Hand this to the tester at the start. Ask them to think out loud as they go.
 **Scenario:** You are a developer who just started learning FeathersJS. You want to use an AI assistant to help you understand the framework and find answers.
 
 **How to do this:**
+
 - For each task, there is a goal. Ask the AI however feels natural to you. There is no "right" way to phrase it.
 - Think out loud. Say what you're expecting and what you notice.
 - If something seems wrong, confusing, or missing, say so.
@@ -100,17 +102,20 @@ There's no right answer here. We want to see how the AI handles questions that m
 ## Host Script: How to Run the 20-Minute Session
 
 ### 0:00 - Tester arrives
+
 - Welcome them and introduce yourself.
-- Say: *"We have about 20 minutes. I'll hand you a task sheet and watch and take notes. Please think out loud as you go. I won't step in unless you're completely stuck."*
+- Say: _"We have about 20 minutes. I'll hand you a task sheet and watch and take notes. Please think out loud as you go. I won't step in unless you're completely stuck."_
 - Open a fresh AI conversation (clear chat history first).
 - Hand them the task sheet.
 
 ### 0:02 - Context brief
+
 - Read or paraphrase the intro script above.
 - Tell them which client they're using and that it's already connected.
-- Ask: *"Any quick questions before we start?"*
+- Ask: _"Any quick questions before we start?"_
 
 ### 0:03 - Testing
+
 - Let the tester drive completely.
 - Your job is to watch and take notes. Do not help, correct, or steer them.
 - Only step in if they've been stuck for more than 2 minutes and cannot continue at all.
@@ -118,20 +123,24 @@ There's no right answer here. We want to see how the AI handles questions that m
 - Note the exact phrasing they use to ask each question. This is valuable data.
 
 ### 0:13 - Wrap up tasks
-- If they haven't finished all tasks, say: *"That's really helpful, let's move to quick feedback."*
+
+- If they haven't finished all tasks, say: _"That's really helpful, let's move to quick feedback."_
 
 ### 0:15 - Verbal debrief (3 required questions, ask the rest if time allows)
 
 **Required (ask every time):**
-1. *"What was the hardest or most confusing part?"*
-2. *"Did the AI's answers feel accurate and trustworthy?"*
-3. *"If you could change one thing first, what would it be?"*
+
+1. _"What was the hardest or most confusing part?"_
+2. _"Did the AI's answers feel accurate and trustworthy?"_
+3. _"If you could change one thing first, what would it be?"_
 
 **Optional (ask if time allows):**
-- *"Did the way you phrased your questions affect what you got back?"*
-- *"On a scale of 1-5, how easy was this to use?"*
+
+- _"Did the way you phrased your questions affect what you got back?"_
+- _"On a scale of 1-5, how easy was this to use?"_
 
 ### 0:19 - Close
+
 - Thank them.
 - If you have a feedback form, ask them to fill it in.
 - Write down their name for PUM.
@@ -140,19 +149,19 @@ There's no right answer here. We want to see how the AI handles questions that m
 
 ## Host Observation Checklist
 
-**Tester name:** ___________________________
+**Tester name:** ************\_\_\_************
 **Session:** A / B / C
-**MCP Client used:** ___________________________
+**MCP Client used:** ************\_\_\_************
 
 For each task, mark one: **Completed unassisted / Completed with a prompt from host / Not completed**
 
-| Task | How tester phrased their question | Completion |
-|------|-----------------------------------|------------|
-| Task 1 - Basic concept | | |
-| Task 2 - Authentication | | |
-| Task 3 - Browse topics | | |
-| Task 4 - Hooks example (optional) | | |
-| Task 5 - Edge case (optional) | | |
+| Task                              | How tester phrased their question | Completion |
+| --------------------------------- | --------------------------------- | ---------- |
+| Task 1 - Basic concept            |                                   |            |
+| Task 2 - Authentication           |                                   |            |
+| Task 3 - Browse topics            |                                   |            |
+| Task 4 - Hooks example (optional) |                                   |            |
+| Task 5 - Edge case (optional)     |                                   |            |
 
 > Write the tester's actual phrasing in the middle column. Different testers will ask differently, and that variation is useful to compare across sessions.
 
@@ -192,6 +201,7 @@ Check these on your own after the tester leaves.
 - [ ] Did the AI call `get-menu` or `get-schema` before searching? (this is the intended flow)
 
 **Edge case result (Task 5):**
+
 - [ ] AI acknowledged uncertainty or said it might not have enough info
 - [ ] AI gave an overconfident or made-up answer
 - [ ] Task 5 was not attempted
@@ -202,12 +212,12 @@ Check these on your own after the tester leaves.
 
 Use this to compare how FeatherMCP behaved across different clients.
 
-| | Session A (Claude Desktop) | Session B (Cursor) | Session C (Open WebUI) |
-|---|---|---|---|
-| Did all 3 required tasks complete? | | | |
-| Any errors or crashes? | | | |
-| Response quality felt consistent? | | | |
-| Anything the client handled differently? | | | |
+|                                          | Session A (Claude Desktop) | Session B (Cursor) | Session C (Open WebUI) |
+| ---------------------------------------- | -------------------------- | ------------------ | ---------------------- |
+| Did all 3 required tasks complete?       |                            |                    |                        |
+| Any errors or crashes?                   |                            |                    |                        |
+| Response quality felt consistent?        |                            |                    |                        |
+| Anything the client handled differently? |                            |                    |                        |
 
 ---
 
