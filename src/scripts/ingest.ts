@@ -113,6 +113,14 @@ function extractPlainText(node: unknown): string {
       return "";
     }
 
+    // Skip <style> blocks — Nuxt Content embeds Shiki syntax-highlighting
+    // CSS as inline style nodes. Without this, CSS like
+    // "html pre.shiki code .snl16{--shiki-default:#F97583}" leaks into
+    // content_plain and pollutes search results (affected 39/47 docs).
+    if (tagName === "style") {
+      return "";
+    }
+
     // Skip badge elements (changelog links, npm badges, etc.)
     if (tagName === "badges") {
       return "";
