@@ -271,9 +271,10 @@ export function searchDocumentation(
  * Sanitize a user's natural language query for FTS5.
  *
  * FTS5 has special syntax characters that can cause parse errors.
- * We convert the user's query into a safe OR-based keyword search.
+ * We convert the user's query into a hybrid search that boosts title
+ * matches while still matching across all columns.
  *
- * Example: "how do hooks work?" → "hooks OR work"
+ * Example: "how do hooks work?" → "title:hooks OR title:work OR hooks OR work"
  */
 function sanitizeFtsQuery(query: string): string {
   // Common stop words to remove
@@ -357,8 +358,12 @@ function sanitizeFtsQuery(query: string): string {
 
   if (words.length === 0) return "";
 
-  // Join with OR for broad matching
-  return words.join(" OR ");
+  // Hybrid search: boost title matches, then fall back to broad body match.
+  // title:X terms get ranked higher by BM25 (weight 10.0) so pages whose
+  // title contains the keyword surface first.
+  const titleTerms = words.map((w) => `title:${w}`).join(" OR ");
+  const bodyTerms = words.join(" OR ");
+  return `${titleTerms} OR ${bodyTerms}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -427,6 +432,34 @@ export function getMenuStructure(): Record<string, MenuItem[]> {
   }
 
   return menu;
+}
+
+/**
+ * Fetch a single document by its title (case-insensitive).
+ * Returns null if no document matches.
+ */
+export function getDocumentByTitle(title: string): FullDocument | null {
+  const database = getDatabase();
+
+  const raw = database
+    .prepare(
+      `SELECT
+         id, title, category, subcategory, content_plain,
+         code_examples, keywords, version, source_file, source_url, created_at
+       FROM documents
+       WHERE lower(title) = lower(?)
+       LIMIT 1`
+    )
+    .get(title) as
+    | (Omit<FullDocument, "code_examples"> & { code_examples: string })
+    | undefined;
+
+  if (!raw) return null;
+
+  return {
+    ...raw,
+    code_examples: JSON.parse(raw.code_examples || "[]"),
+  };
 }
 
 /**
