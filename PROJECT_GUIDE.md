@@ -62,8 +62,9 @@ FeatherMCP is an **MCP (Model Context Protocol) server** that gives LLMs (like C
 │                    MCP Server (stdio)                        │
 │  src/index.ts                                               │
 │                                                             │
-│  3 tools:                                                   │
+│  4 tools:                                                   │
 │    🔍 search-doc  — Full-text search with BM25 ranking      │
+│    📄 get-doc     — Retrieve full content of a single page   │
 │    📋 get-schema  — Show database structure                  │
 │    📂 get-menu    — Browse documentation by category         │
 │                                                             │
@@ -99,11 +100,11 @@ Our ingestion script reads those 4 tables and creates:
 2. A **`documents_fts`** FTS5 virtual table for full-text search with BM25 relevance ranking
 
 ### Stage 3: MCP Server (`npm start`)
-The server starts, connects to the bundled SQLite database, and exposes 3 tools over the MCP protocol (JSON-RPC over stdio).
+The server starts, connects to the bundled SQLite database, and exposes 4 tools over the MCP protocol (JSON-RPC over stdio).
 
 ### Stage 4: LLM Interaction
 1. LLM client (e.g., Claude Desktop) connects to our server
-2. Client calls `tools/list` to discover our 3 tools
+2. Client calls `tools/list` to discover our 4 tools
 3. User asks "How do hooks work in Feathers?"
 4. LLM calls `search-doc` with `{"query": "hooks"}`
 5. We run an FTS5 search, return truncated results
@@ -121,6 +122,7 @@ FeatherMCP/
 │   │   └── database.ts           # SQLite query layer (search, schema, menu)
 │   ├── tools/
 │   │   ├── index.ts              # Barrel file — exports all tools
+│   │   ├── get-doc.ts            # MCP tool: fetch full page by title/id/path
 │   │   ├── get-menu.ts           # MCP tool: browse docs by category
 │   │   ├── get-schema.ts         # MCP tool: show database structure
 │   │   └── search-doc.ts         # MCP tool: full-text search
@@ -177,7 +179,7 @@ The heart of the project. This file manages the SQLite connection and provides a
 | `getDatabase()` | Returns a singleton read-only connection to the SQLite DB |
 | `findDatabasePath()` | Locates the database file (checks `data/` bundled copy first, then feathers workspace) |
 | `searchDocumentation(query, category?, limit?)` | FTS5 full-text search with BM25 ranking |
-| `sanitizeFtsQuery(query)` | Cleans user queries — removes stop words, handles special chars, joins tokens with OR |
+| `sanitizeFtsQuery(query)` | Cleans user queries — removes stop words, handles special chars, boosts title matches, joins tokens with OR |
 | `getSchema()` | Returns the `documents` table structure (columns and types) |
 | `getMenuStructure()` | Returns all documents grouped by category |
 | `getDocumentByPath(path)` | Fetches a single document by its source file path |
