@@ -459,6 +459,68 @@ Replace `/absolute/path/to/` with the actual path on your machine. Then restart 
 
 ---
 
+### Connecting to Cursor (Alternative)
+
+**Step 1 — Build the server:**
+```bash
+cd FeatherMCP
+npm run build
+```
+
+**Step 2 — Create a `.cursor/mcp.json` config file** with the absolute path to `build/index.js`:
+```json
+{
+  "mcpServers": {
+    "feathersjsDocs": {
+      "command": "node",
+      "args": ["/absolute/path/to/FeatherMCP/build/index.js"]
+    }
+  }
+}
+```
+
+Replace `/absolute/path/to/` with the actual path. For example:
+```
+/Users/yourname/Documents/CPSC_319/FeatherMCP/build/index.js
+```
+
+**Where to place the file** depends on whether you want the server available to one project or all of them:
+
+| Scope | Where to put `.cursor/mcp.json` | Shared via Git |
+|---|---|---|
+| This project only | Inside the repo root: `FeatherMCP/.cursor/mcp.json` | ✅ Yes — teammates get it automatically |
+| All your projects | Your user directory: `Users/user/.cursor/mcp.json` | ❌ No — local to your machine only |
+
+The config format is identical either way — the only difference is the file location.
+
+**Step 3 — Activate in VS Code:**
+- `Cmd+Shift+P` → `Developer: Reload Window`
+- `Cmd+Shift+P` → `View: Open MCP Settings` — confirm `feathersjsDocs` appears with a green status indicator
+- Confirm all tools are present
+- If it shows an error, verify the absolute path in `mcp.json` is correct and `build/index.js` exists
+
+**Step 4 — Use in Cursor's AI chat:**
+- Open the **Composer** panel (`Cmd+I`) or the Chat panel
+- Switch to **Agent** mode
+- Ask a FeathersJS question — Cursor will call our tools automatically
+
+**Example prompts to test:**
+```
+How do hooks work in FeathersJS?
+Show me code examples for authentication in FeathersJS.
+What FeathersJS services are available?
+```
+
+**Troubleshooting:**
+| Problem | Fix |
+|---------|-----|
+| Server not appearing in MCP settings | Verify `.cursor/mcp.json` is valid JSON and the path to `build/index.js` is absolute and correct |
+| Red/error status | Run `node /absolute/path/to/FeatherMCP/build/index.js` in terminal to see the startup error |
+| Tools not called in chat | Make sure you are in **Agent** mode, not Ask or Edit mode |
+| `build/index.js` not found | Run `npm run build` inside the `FeatherMCP/` directory first |
+
+---
+
 ## How to Run Everything
 
 ### First-Time Setup
