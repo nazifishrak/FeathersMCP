@@ -70,6 +70,14 @@ export interface FullDocument {
   created_at: string;
 }
 
+/** Replace inline base64 data URIs with a placeholder to avoid bloating LLM context. */
+export function stripBase64DataURIs(text: string): string {
+  return text.replace(
+    /data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/g,
+    "[base64 image removed]",
+  );
+}
+
 // ---------------------------------------------------------------------------
 // DATABASE CONNECTION
 // ---------------------------------------------------------------------------
@@ -117,7 +125,7 @@ export function getDatabase(dbPath?: string): Database.Database {
  * Finds the database file by checking common locations.
  */
 function findDatabasePath(): string {
-  // When running from FeatherMCP/build/ or FeatherMCP/src/
+  // When running from FeathersMCP/build/ or FeathersMCP/src/
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
 
@@ -125,12 +133,12 @@ function findDatabasePath(): string {
   // 1. Bundled data/ directory (for end users who installed the package)
   // 2. Feathers workspace copy (for developers working on the MCP server)
   //
-  // From src/db/  → ../../data/   = FeatherMCP/data/
-  // From build/db/ → ../../data/  = FeatherMCP/data/
+  // From src/db/  → ../../data/   = FeathersMCP/data/
+  // From build/db/ → ../../data/  = FeathersMCP/data/
   const candidates = [
     // Bundled database — this is what users will have
     path.resolve(__dirname, "../../data/contents.sqlite"),
-    // Dev fallback: feathers repo sitting next to FeatherMCP
+    // Dev fallback: feathers repo sitting next to FeathersMCP
     path.resolve(__dirname, "../../../feathers/website/.data/content/contents.sqlite"),
   ];
 
@@ -271,9 +279,10 @@ export function searchDocumentation(
  * Sanitize a user's natural language query for FTS5.
  *
  * FTS5 has special syntax characters that can cause parse errors.
- * We convert the user's query into a safe OR-based keyword search.
+ * We convert the user's query into a hybrid search that boosts title
+ * matches while still matching across all columns.
  *
- * Example: "how do hooks work?" → "hooks OR work"
+ * Example: "how do hooks work?" → "title:hooks OR title:work OR hooks OR work"
  */
 function sanitizeFtsQuery(query: string): string {
   // Common stop words to remove
@@ -357,8 +366,12 @@ function sanitizeFtsQuery(query: string): string {
 
   if (words.length === 0) return "";
 
-  // Join with OR for broad matching
-  return words.join(" OR ");
+  // Hybrid search: boost title matches, then fall back to broad body match.
+  // title:X terms get ranked higher by BM25 (weight 10.0) so pages whose
+  // title contains the keyword surface first.
+  const titleTerms = words.map((w) => `title:${w}`).join(" OR ");
+  const bodyTerms = words.join(" OR ");
+  return `${titleTerms} OR ${bodyTerms}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -427,6 +440,34 @@ export function getMenuStructure(): Record<string, MenuItem[]> {
   }
 
   return menu;
+}
+
+/**
+ * Fetch a single document by its title (case-insensitive).
+ * Returns null if no document matches.
+ */
+export function getDocumentByTitle(title: string): FullDocument | null {
+  const database = getDatabase();
+
+  const raw = database
+    .prepare(
+      `SELECT
+         id, title, category, subcategory, content_plain,
+         code_examples, keywords, version, source_file, source_url, created_at
+       FROM documents
+       WHERE lower(title) = lower(?)
+       LIMIT 1`
+    )
+    .get(title) as
+    | (Omit<FullDocument, "code_examples"> & { code_examples: string })
+    | undefined;
+
+  if (!raw) return null;
+
+  return {
+    ...raw,
+    code_examples: JSON.parse(raw.code_examples || "[]"),
+  };
 }
 
 /**

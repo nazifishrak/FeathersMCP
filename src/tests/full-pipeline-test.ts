@@ -28,7 +28,7 @@ const DB_PATH = path.resolve(
   "../../data/contents.sqlite"
 );
 
-// Resolved absolute path to the FeatherMCP project root (for running npm scripts)
+// Resolved absolute path to the FeathersMCP project root (for running npm scripts)
 const PROJECT_ROOT = path.resolve(import.meta.dirname || ".", "../..");
 
 // Track results
@@ -365,7 +365,7 @@ dbFts.close();
 // ---------------------------------------------------------------------------
 section("Test 6: Search relevance via database.ts");
 
-import { searchDocumentation, getMenuStructure, getSchema, closeDatabase } from "../db/database.js";
+import { searchDocumentation, getMenuStructure, getSchema, getDocumentByTitle, getDocumentById, getDocumentByPath, closeDatabase } from "../db/database.js";
 
 interface RelevanceCheck {
   query: string;
@@ -450,6 +450,56 @@ try {
   }
 } catch (err) {
   fail(`getSchema() executes without error`, String(err));
+}
+
+// Spot-check: getDocumentByTitle returns a full document
+try {
+  const doc = getDocumentByTitle("Hooks");
+  if (doc && doc.title === "Hooks" && doc.content_plain.length > 1000) {
+    pass(`getDocumentByTitle("Hooks") returns full document (${doc.content_plain.length} chars)`);
+  } else if (!doc) {
+    fail(`getDocumentByTitle("Hooks") returns a document`, `Returned null`);
+  } else {
+    fail(`getDocumentByTitle("Hooks") returns full document`, `content_plain only ${doc.content_plain.length} chars`);
+  }
+} catch (err) {
+  fail(`getDocumentByTitle() executes without error`, String(err));
+}
+
+// Spot-check: getDocumentById returns a document
+try {
+  const doc = getDocumentById(1);
+  if (doc && doc.id === 1 && doc.title) {
+    pass(`getDocumentById(1) returns document: "${doc.title}"`);
+  } else {
+    fail(`getDocumentById(1) returns a document`, doc ? `Missing title` : `Returned null`);
+  }
+} catch (err) {
+  fail(`getDocumentById() executes without error`, String(err));
+}
+
+// Spot-check: getDocumentByPath returns a document
+try {
+  const doc = getDocumentByPath("api/hooks");
+  if (doc && doc.title.toLowerCase().includes("hook")) {
+    pass(`getDocumentByPath("api/hooks") returns document: "${doc.title}"`);
+  } else {
+    fail(`getDocumentByPath("api/hooks") returns a document`, doc ? `Got "${doc.title}"` : `Returned null`);
+  }
+} catch (err) {
+  fail(`getDocumentByPath() executes without error`, String(err));
+}
+
+// Spot-check: getDocumentByTitle returns null for non-existent title
+try {
+  const doc = getDocumentByTitle("NonExistentDocument123");
+  if (doc === null) {
+    pass(`getDocumentByTitle("NonExistentDocument123") correctly returns null`);
+  } else {
+    fail(`getDocumentByTitle returns null for non-existent title`, `Got: "${doc.title}"`);
+  }
+} catch (err) {
+  fail(`getDocumentByTitle null check executes without error`, String(err));
 }
 
 closeDatabase();

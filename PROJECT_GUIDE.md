@@ -1,4 +1,4 @@
-# FeatherMCP — Project Guide
+# FeathersMCP — Project Guide
 
 A complete walkthrough of how the FeathersJS MCP Server works, from data ingestion to serving search results to LLM clients.
 
@@ -20,7 +20,7 @@ A complete walkthrough of how the FeathersJS MCP Server works, from data ingesti
 
 ## What This Project Does
 
-FeatherMCP is an **MCP (Model Context Protocol) server** that gives LLMs (like Claude, GPT, etc.) the ability to search FeathersJS documentation. When a user asks an LLM a question about FeathersJS, the LLM can call our tools to look up the answer from the actual docs instead of relying on its training data.
+FeathersMCP is an **MCP (Model Context Protocol) server** that gives LLMs (like Claude, GPT, etc.) the ability to search FeathersJS documentation. When a user asks an LLM a question about FeathersJS, the LLM can call our tools to look up the answer from the actual docs instead of relying on its training data.
 
 **In simple terms:** We take the FeathersJS documentation website → extract the content into a searchable SQLite database → serve it through MCP tools that any LLM client can call.
 
@@ -62,8 +62,9 @@ FeatherMCP is an **MCP (Model Context Protocol) server** that gives LLMs (like C
 │                    MCP Server (stdio)                        │
 │  src/index.ts                                               │
 │                                                             │
-│  3 tools:                                                   │
+│  4 tools:                                                   │
 │    🔍 search-doc  — Full-text search with BM25 ranking      │
+│    📄 get-doc     — Retrieve full content of a single page   │
 │    📋 get-schema  — Show database structure                  │
 │    📂 get-menu    — Browse documentation by category         │
 │                                                             │
@@ -99,11 +100,11 @@ Our ingestion script reads those 4 tables and creates:
 2. A **`documents_fts`** FTS5 virtual table for full-text search with BM25 relevance ranking
 
 ### Stage 3: MCP Server (`npm start`)
-The server starts, connects to the bundled SQLite database, and exposes 3 tools over the MCP protocol (JSON-RPC over stdio).
+The server starts, connects to the bundled SQLite database, and exposes 4 tools over the MCP protocol (JSON-RPC over stdio).
 
 ### Stage 4: LLM Interaction
 1. LLM client (e.g., Claude Desktop) connects to our server
-2. Client calls `tools/list` to discover our 3 tools
+2. Client calls `tools/list` to discover our 4 tools
 3. User asks "How do hooks work in Feathers?"
 4. LLM calls `search-doc` with `{"query": "hooks"}`
 5. We run an FTS5 search, return truncated results
@@ -114,13 +115,14 @@ The server starts, connects to the bundled SQLite database, and exposes 3 tools 
 ## Project Structure
 
 ```
-FeatherMCP/
+FeathersMCP/
 ├── src/                          # All TypeScript source code
 │   ├── index.ts                  # MCP server entry point
 │   ├── db/
 │   │   └── database.ts           # SQLite query layer (search, schema, menu)
 │   ├── tools/
 │   │   ├── index.ts              # Barrel file — exports all tools
+│   │   ├── get-doc.ts            # MCP tool: fetch full page by title/id/path
 │   │   ├── get-menu.ts           # MCP tool: browse docs by category
 │   │   ├── get-schema.ts         # MCP tool: show database structure
 │   │   └── search-doc.ts         # MCP tool: full-text search
@@ -159,7 +161,7 @@ The simplest file in the project. It does three things:
 
 ```typescript
 // This is essentially the whole file:
-const server = new McpServer({ name: "FeatherJSMCP", version: "1.0.0" });
+const server = new McpServer({ name: "FeathersJSMCP", version: "1.0.0" });
 tools.forEach(tool => server.registerTool(tool.name, tool.schema, tool.handler));
 await server.connect(new StdioServerTransport());
 ```
@@ -177,7 +179,7 @@ The heart of the project. This file manages the SQLite connection and provides a
 | `getDatabase()` | Returns a singleton read-only connection to the SQLite DB |
 | `findDatabasePath()` | Locates the database file (checks `data/` bundled copy first, then feathers workspace) |
 | `searchDocumentation(query, category?, limit?)` | FTS5 full-text search with BM25 ranking |
-| `sanitizeFtsQuery(query)` | Cleans user queries — removes stop words, handles special chars, joins tokens with OR |
+| `sanitizeFtsQuery(query)` | Cleans user queries — removes stop words, handles special chars, boosts title matches, joins tokens with OR |
 | `getSchema()` | Returns the `documents` table structure (columns and types) |
 | `getMenuStructure()` | Returns all documents grouped by category |
 | `getDocumentByPath(path)` | Fetches a single document by its source file path |
@@ -394,7 +396,7 @@ This is the method that works for our team. VS Code reads MCP server config from
 
 **Step 1 — Build the server:**
 ```bash
-cd FeatherMCP
+cd FeathersMCP
 npm run build
 ```
 
@@ -405,7 +407,7 @@ npm run build
     "feathersjsDocs": {
       "type": "stdio",
       "command": "node",
-      "args": ["${workspaceFolder}/FeatherMCP/build/index.js"]
+      "args": ["${workspaceFolder}/FeathersMCP/build/index.js"]
     }
   }
 }
@@ -433,7 +435,7 @@ What FeathersJS services are available?
 **Troubleshooting:**
 | Problem | Fix |
 |---------|-----|
-| Server not in MCP: List Servers | Make sure the workspace folder is `MVP/` (not `FeatherMCP/`) |
+| Server not in MCP: List Servers | Make sure the workspace folder is `MVP/` (not `FeathersMCP/`) |
 | Server stopped/won't start | Run `npm run build` then `MCP: Reset Cached Tools` |
 | Tools not appearing in chat | Switch to Agent mode in Copilot Chat |
 | Unknown config setting warning | Ignore it — the old `github.copilot.advanced.mcpServers` key is deprecated |
@@ -449,7 +451,7 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "feathersjs-docs": {
       "command": "node",
-      "args": ["/absolute/path/to/FeatherMCP/build/index.js"]
+      "args": ["/absolute/path/to/FeathersMCP/build/index.js"]
     }
   }
 }
@@ -463,7 +465,7 @@ Replace `/absolute/path/to/` with the actual path on your machine. Then restart 
 
 **Step 1 — Build the server:**
 ```bash
-cd FeatherMCP
+cd FeathersMCP
 npm run build
 ```
 
@@ -473,7 +475,7 @@ npm run build
   "mcpServers": {
     "feathersjsDocs": {
       "command": "node",
-      "args": ["/absolute/path/to/FeatherMCP/build/index.js"]
+      "args": ["/absolute/path/to/FeathersMCP/build/index.js"]
     }
   }
 }
@@ -481,14 +483,14 @@ npm run build
 
 Replace `/absolute/path/to/` with the actual path. For example:
 ```
-/Users/yourname/Documents/CPSC_319/FeatherMCP/build/index.js
+/Users/yourname/Documents/CPSC_319/FeathersMCP/build/index.js
 ```
 
 **Where to place the file** depends on whether you want the server available to one project or all of them:
 
 | Scope | Where to put `.cursor/mcp.json` | Shared via Git |
 |---|---|---|
-| This project only | Inside the repo root: `FeatherMCP/.cursor/mcp.json` | ✅ Yes — teammates get it automatically |
+| This project only | Inside the repo root: `FeathersMCP/.cursor/mcp.json` | ✅ Yes — teammates get it automatically |
 | All your projects | Your user directory: `Users/user/.cursor/mcp.json` | ❌ No — local to your machine only |
 
 The config format is identical either way — the only difference is the file location.
@@ -515,9 +517,9 @@ What FeathersJS services are available?
 | Problem | Fix |
 |---------|-----|
 | Server not appearing in MCP settings | Verify `.cursor/mcp.json` is valid JSON and the path to `build/index.js` is absolute and correct |
-| Red/error status | Run `node /absolute/path/to/FeatherMCP/build/index.js` in terminal to see the startup error |
+| Red/error status | Run `node /absolute/path/to/FeathersMCP/build/index.js` in terminal to see the startup error |
 | Tools not called in chat | Make sure you are in **Agent** mode, not Ask or Edit mode |
-| `build/index.js` not found | Run `npm run build` inside the `FeatherMCP/` directory first |
+| `build/index.js` not found | Run `npm run build` inside the `FeathersMCP/` directory first |
 
 ---
 
@@ -525,7 +527,7 @@ What FeathersJS services are available?
 
 ### First-Time Setup
 ```bash
-cd FeatherMCP
+cd FeathersMCP
 npm install          # Install dependencies
 npm run build        # Compile TypeScript → build/
 ```

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ToolDefinition } from "../types/tool.js";
-import { executeQuery, searchDocumentation } from "../db/database.js";
+import { executeQuery, searchDocumentation, stripBase64DataURIs } from "../db/database.js";
 
 const schema = {
   query: z.string().describe("The search query to find in the documentation"),
@@ -71,21 +71,30 @@ async function handler({
   }
 
   // Format results for the LLM — truncate content to avoid blowing up
-  // context windows. Full content_plain can be thousands of chars per doc;
-  // 500 chars gives enough context for the LLM to synthesize an answer.
-  // Code examples are capped at 3 per result for the same reason.
-  const formattedResults = results.map((r, index) => ({
-    rank: index + 1,
-    title: r.title,
-    category: r.category,
-    subcategory: r.subcategory || undefined,
-    source_url: r.source_url,
-    content_snippet:
-      r.content_plain.substring(0, 500) +
-      (r.content_plain.length > 500 ? "..." : ""),
-    code_examples: r.code_examples.slice(0, 3),
-    total_code_examples: r.code_examples.length,
-  }));
+  // context windows. 1200 chars captures ~47% of docs in full while keeping
+  // worst-case payload under 16 KB. Code examples capped at 3 per result.
+  // Use the get-doc tool to fetch full content for a specific page.
+  const SNIPPET_LIMIT = 1200;
+  const formattedResults = results.map((r, index) => {
+    const isTruncated = r.content_plain.length > SNIPPET_LIMIT;
+    const remaining = r.content_plain.length - SNIPPET_LIMIT;
+    return {
+      rank: index + 1,
+      title: r.title,
+      category: r.category,
+      subcategory: r.subcategory || undefined,
+      source_url: r.source_url,
+      content_snippet: isTruncated
+        ? r.content_plain.substring(0, SNIPPET_LIMIT) +
+          `\n... [truncated — ${remaining} more chars — use get-doc tool for full content]`
+        : r.content_plain,
+      code_examples: r.code_examples.slice(0, 3).map((ex) => ({
+        language: ex.language,
+        code: stripBase64DataURIs(ex.code),
+      })),
+      total_code_examples: r.code_examples.length,
+    };
+  });
 
   return {
     content: [
@@ -109,7 +118,7 @@ async function handler({
 export const searchDocTool: ToolDefinition<typeof schema> = {
   name: "search-doc",
   description:
-    "Search the FeatherJS documentation for relevant content. You can make multiple calls to this tool to refine your search. Call get-schema and get-menu first to craft better queries.",
+    "Search the FeathersJS documentation for relevant content. You can make multiple calls to this tool to refine your search. Call get-schema and get-menu first to craft better queries.",
   schema,
   handler,
 };
