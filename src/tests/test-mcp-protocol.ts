@@ -48,7 +48,7 @@ function startServer(): Promise<void> {
 
     proc.stderr!.on("data", (data: Buffer) => {
       const text = data.toString().trim();
-      if (text && !text.includes("FeatherJSMCP")) {
+      if (text && !text.includes("FeathersJSMCP")) {
         console.error("  STDERR:", text);
       }
     });
@@ -271,8 +271,14 @@ async function main() {
     arguments: {},
   });
   const noArgContent = noArgRes.result?.content?.[0]?.text || "";
-  console.log("  Response:", noArgContent.substring(0, 80));
-  console.log(noArgContent.includes("provide") ? "  ✅ Missing-argument error handled" : "  ❌ No error message for empty arguments");
+  const noArgError =
+    noArgRes.error?.message ||
+    noArgRes.error?.data?.message ||
+    noArgRes.error?.data?.error ||
+    "";
+  const noArgMessage = noArgContent || noArgError;
+  console.log("  Response:", noArgMessage.substring(0, 80));
+  console.log(noArgMessage.toLowerCase().includes("provide") ? "  ✅ Missing-argument error handled" : "  ❌ No error message for empty arguments");
 
   // Test 13: get-doc with non-existent title
   console.log("\n── Test 13: tools/call get-doc (title not found) ──");
@@ -338,7 +344,7 @@ async function main() {
   const uploadsContent = uploadsRes.result?.content?.[0]?.text || "";
   const uploadsData = JSON.parse(uploadsContent);
   const allCode = (uploadsData.code_examples || []).map((ex: any) => ex.code).join("");
-  const hasBase64 = /data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]{100,}/.test(allCode);
+  const hasBase64 = /data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/.test(allCode);
   console.log(`  Document: "${uploadsData.title}"`);
   console.log(`  Code examples: ${uploadsData.code_examples?.length || 0}`);
   console.log(hasBase64 ? "  ❌ Base64 data URIs found in code examples!" : "  ✅ No base64 data URIs in code (stripped correctly)");

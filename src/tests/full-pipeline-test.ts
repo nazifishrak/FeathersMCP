@@ -28,7 +28,7 @@ const DB_PATH = path.resolve(
   "../../data/contents.sqlite"
 );
 
-// Resolved absolute path to the FeatherMCP project root (for running npm scripts)
+// Resolved absolute path to the FeathersMCP project root (for running npm scripts)
 const PROJECT_ROOT = path.resolve(import.meta.dirname || ".", "../..");
 
 // Track results

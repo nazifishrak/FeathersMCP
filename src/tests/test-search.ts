@@ -27,7 +27,7 @@ const dbPath = process.argv[2] || findDbPath();
 function findDbPath(): string {
   const scriptDir = import.meta.dirname || ".";
   const candidates = [
-    // Bundled in FeatherMCP/data/ (preferred — works without feathers repo)
+    // Bundled in FeathersMCP/data/ (preferred — works without feathers repo)
     path.resolve(scriptDir, "../../data/contents.sqlite"),
     // Feathers workspace copy (for development)
     path.resolve(scriptDir, "../../../feathers/website/.data/content/contents.sqlite"),

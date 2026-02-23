@@ -1,4 +1,4 @@
-# Issues & Fixes — FeatherMCP MVP
+# Issues & Fixes — FeathersMCP MVP
 
 This document records every issue found during the MVP audit and what was done to fix it.
 

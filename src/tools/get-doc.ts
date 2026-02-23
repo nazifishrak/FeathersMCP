@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { ToolDefinition } from "../types/tool.js";
-import { getDocumentByTitle, getDocumentById, getDocumentByPath } from "../db/database.js";
-
-/** Replace inline base64 data URIs with a placeholder to avoid bloating LLM context. */
-function stripBase64DataURIs(text: string): string {
-  return text.replace(/data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/g, "[base64 image removed]");
-}
+import {
+  getDocumentByTitle,
+  getDocumentById,
+  getDocumentByPath,
+  stripBase64DataURIs,
+} from "../db/database.js";
 
 const schema = {
   title: z
@@ -28,11 +28,21 @@ const schema = {
     ),
 };
 
+const validationSchema = z
+  .object(schema)
+  .refine((data) => data.title || data.id !== undefined || data.path, {
+    message: "Provide at least one of: title, id, path",
+  });
+
 async function handler({ title, id, path }: { title?: string; id?: number; path?: string }) {
-  if (!title && id === undefined && !path) {
+  const validation = validationSchema.safeParse({ title, id, path });
+  if (!validation.success) {
     return {
       content: [
-        { type: "text" as const, text: "Error: provide 'title', 'id', or 'path' to fetch a document." },
+        {
+          type: "text" as const,
+          text: `Error: ${validation.error.issues[0]?.message || "Invalid input"}`,
+        },
       ],
     };
   }

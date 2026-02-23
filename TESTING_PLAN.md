@@ -29,7 +29,7 @@
 
 ## What We're Testing
 
-FeatherMCP is an MCP server that gives AI assistants access to FeathersJS v6 documentation via a local SQLite database. We're stress-testing it across **different LLM clients** and **different JS runtimes**.
+FeathersMCP is an MCP server that gives AI assistants access to FeathersJS v6 documentation via a local SQLite database. We're stress-testing it across **different LLM clients** and **different JS runtimes**.
 
 Each hosting session is **20 minutes** with two phases:
 - **Phase 1 (~10 min):** Query testing — tester asks questions, we evaluate search quality
@@ -152,7 +152,7 @@ Each teammate uses a different MCP client and targets a different runtime during
 
 ## Intro Script (read to the tester, ~1 min)
 
-> "FeatherMCP is a tool that gives an AI assistant access to the FeathersJS documentation. Instead of searching the internet, the AI looks things up from a local database we built. Today you're using **[name your client]**. We have about 20 minutes total with two parts: first you'll ask the AI some questions about FeathersJS to see how well it answers (~10 min). Then we'll try to actually build a simple FeathersJS app together using the AI (~8 min). Just ask questions however feels natural — there's no right way to phrase things. Think out loud so I can take notes."
+> "FeathersMCP is a tool that gives an AI assistant access to the FeathersJS documentation. Instead of searching the internet, the AI looks things up from a local database we built. Today you're using **[name your client]**. We have about 20 minutes total with two parts: first you'll ask the AI some questions about FeathersJS to see how well it answers (~10 min). Then we'll try to actually build a simple FeathersJS app together using the AI (~8 min). Just ask questions however feels natural — there's no right way to phrase things. Think out loud so I can take notes."
 
 ---
 

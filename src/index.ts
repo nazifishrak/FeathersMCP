@@ -5,7 +5,7 @@ import { tools } from "./tools/index.js";
 
 // Create server instance
 const server = new McpServer({
-  name: "FeatherJSMCP",
+  name: "FeathersJSMCP",
   version: "1.0.0",
 });
 
@@ -25,7 +25,7 @@ for (const tool of tools) {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("FeatherJS MCP Server running on stdio");
+  console.error("FeathersJS MCP Server running on stdio");
 }
 
 main().catch(console.error);
