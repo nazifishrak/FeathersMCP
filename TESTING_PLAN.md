@@ -11,16 +11,16 @@ We have three hosting sessions. Each one uses a **different MCP client** so we c
 | Session       | Hosts         | MCP Client to Use                        |
 | ------------- | ------------- | ---------------------------------------- |
 | A (5:40-6:00) | Members 1 & 2 | Claude Desktop                           |
-| B (6:05-6:25) | Members 3 & 4 | Cursor (MCP mode)                        |
-| C (6:30-6:50) | Member 5      | Open WebUI (or whichever client is left) |
+| B (6:05-6:25) | Members 3,4,5 | Cursor (MCP mode)                        |
+| C (6:30-6:50) | Members 6,7,8 | Open WebUI (or whichever client is left) |
 
-> If one of these clients is not ready in time, fall back to Claude Desktop for that session and note it in your bug report. The goal is to stress-test the server across different clients, not the clients themselves. If the same search query behaves differently between sessions, that is worth flagging.
+> If one of these clients is not ready in time, fall back to Claude Desktop/VSCode-Insiders+Copilot for that session and note it in your bug report. The goal is to stress-test the server across different clients, not the clients themselves. If the same search query behaves differently between sessions, that is worth flagging.
 
 ---
 
 ## Pre-Session Checklist
 
-- [ ] `contents.sqlite` is packaged with the repo at `feathers/website/.data/content/contents.sqlite` (no need to clone or run the FeathersJS website — the database file is bundled directly)
+- [ ] `contents.sqlite` is packaged with the repo at `data/contents.sqlite` (no need to clone or run the FeathersJS website — the database file is bundled directly)
 - [ ] Pipeline tests all pass (`npm run test:pipeline`) — this verifies the bundled database and search are working
 - [ ] MCP server builds without errors (`npm run build`)
 - [ ] MCP server starts without crashing (`npm start`)
@@ -266,7 +266,7 @@ File these as GitHub issues after the session.
 
 ## What to Bring to Wednesday PUM (Feb 25)
 
-- [ ] Names of all 5 testers
+- [ ] Names of all 7-8 testers
 - [ ] Completed observation checklists (one per tester)
 - [ ] GitHub issues filed for each bug
 - [ ] Which bugs you plan to fix and how

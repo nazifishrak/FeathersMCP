@@ -53,8 +53,8 @@ npm run build
 ### 3. Confirm Copilot Chat is in Agent mode with tools enabled
 
 - Open GitHub Copilot Chat
-- Switch dropdown to **Agent** mode
-- Click the Tools (🔧) icon → verify `feathersjsDocs` tools are checked:
+- Switch dropdown at the bottom below chat to **Agent** mode
+- Click the Tools (🔧) icon near the same place → verify `feathersjsDocs` tools are checked:
   - `search-doc`
   - `get-menu`
   - `get-schema`
@@ -66,7 +66,7 @@ Type this in Copilot Chat — if you get a structured answer about hooks with co
 
 ---
 
-## Tester Task List
+## Tester Task List (Alternative: followe TESTING_PLAN.md)
 
 Give this list to each tester. Read them the context sentence first, then let them type the prompt themselves.
 

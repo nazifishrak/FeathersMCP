@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "feathersjsDocs": {
+      "command": "node",
+      "args": [
+        "build/index.js"
+      ]
+    }
+  }
+}

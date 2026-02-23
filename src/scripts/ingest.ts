@@ -31,7 +31,7 @@
  *   npx tsx src/scripts/ingest.ts [path-to-contents.sqlite]
  *
  * If no path is provided, it looks for:
- *   ../feathers/website/.data/content/contents.sqlite
+ *   ../../data/contents.sqlite
  */
 
 import Database from "better-sqlite3";
@@ -459,7 +459,7 @@ function main(): void {
     ? path.resolve(dbPathArg)
     : path.resolve(
         __dirname,
-        "../../../feathers/website/.data/content/contents.sqlite"
+        "../../data/contents.sqlite"
       );
 
   console.log(`\n📂 Database path: ${dbPath}`);
@@ -530,12 +530,12 @@ function main(): void {
       d.title,
       d.category,
       d.source_url,
-      rank
+      bm25(documents_fts, 10.0, 5.0, 1.0, 3.0) AS rank
     FROM documents_fts
     JOIN documents d ON d.id = documents_fts.rowid
-    WHERE documents_fts MATCH 'authentication OR hooks'
-    ORDER BY rank
-    LIMIT 5
+    WHERE documents_fts MATCH 'title:authentication OR title:hooks OR authentication hooks'
+    ORDER BY rank ASC
+    LIMIT 5;
   `
     )
     .all() as Array<{

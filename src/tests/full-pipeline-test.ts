@@ -25,7 +25,7 @@ import fs from "fs";
 
 const DB_PATH = path.resolve(
   import.meta.dirname || ".",
-  "../../../feathers/website/.data/content/contents.sqlite"
+  "../../data/contents.sqlite"
 );
 
 // Resolved absolute path to the FeatherMCP project root (for running npm scripts)
