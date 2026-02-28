@@ -36,6 +36,7 @@ export interface SearchResult {
   content_plain: string;
   code_examples: Array<{ language: string; code: string }>;
   source_url: string;
+  source_file: string;
   score: number;
 }
 
@@ -73,7 +74,7 @@ export interface FullDocument {
 /** Replace inline base64 data URIs with a placeholder to avoid bloating LLM context. */
 export function stripBase64DataURIs(text: string): string {
   return text.replace(
-    /data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/g,
+    /data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/gi,
     "[base64 image removed]",
   );
 }
@@ -229,6 +230,7 @@ export function searchDocumentation(
         d.content_plain,
         d.code_examples,
         d.source_url,
+        d.source_file,
         bm25(documents_fts, 10.0, 5.0, 1.0, 3.0) as score
       FROM documents_fts
       JOIN documents d ON d.id = documents_fts.rowid
@@ -248,6 +250,7 @@ export function searchDocumentation(
         d.content_plain,
         d.code_examples,
         d.source_url,
+        d.source_file,
         bm25(documents_fts, 10.0, 5.0, 1.0, 3.0) as score
       FROM documents_fts
       JOIN documents d ON d.id = documents_fts.rowid
@@ -266,6 +269,7 @@ export function searchDocumentation(
     content_plain: string;
     code_examples: string;
     source_url: string;
+    source_file: string;
     score: number;
   }>;
 

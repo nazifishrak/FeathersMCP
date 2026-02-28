@@ -12,19 +12,19 @@ const schema = {
     .string()
     .optional()
     .describe(
-      "The exact title of the document to retrieve (e.g. \"Hooks\" or \"Authentication\"). Use after search-doc to get full content.",
+      "The exact title of the document to retrieve (e.g. \"Hooks\" or \"Authentication\"). WARNING: Multiple documents may share the same title. Avoid this when possible; prefer id or path instead.",
     ),
   id: z
     .number()
     .optional()
     .describe(
-      "The numeric document ID (from get-menu or search results). Alternative to title.",
+      "The numeric document ID (from get-menu or search results). RECOMMENDED: Use this as the primary way to fetch documents after search-doc, as it uniquely identifies a document.",
     ),
   path: z
     .string()
     .optional()
     .describe(
-      "The source_file path of the document (e.g. \"api/hooks\", \"guides/basics/setup\"). Alternative to title/id.",
+      "The source_file path of the document (e.g. \"api/hooks\", \"guides/basics/setup\"). RECOMMENDED: Use this as an alternative to id; uniquely identifies a document.",
     ),
 };
 
@@ -94,7 +94,7 @@ async function handler({ title, id, path }: { title?: string; id?: number; path?
 export const getDocTool: ToolDefinition<typeof schema> = {
   name: "get-doc",
   description:
-    "Retrieve the full content of a single FeathersJS documentation page by title, ID, or path. Use after search-doc when you need the complete text and all code examples for a specific page.",
+    "Retrieve the full content of a FeathersJS documentation page by id, path, or title. Prefer id or path over title, as titles are not unique. Use after search-doc when you need the complete text or all code examples for a specific page.",
   schema,
   handler,
 };

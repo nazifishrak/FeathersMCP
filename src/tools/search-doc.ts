@@ -80,9 +80,11 @@ async function handler({
     const remaining = r.content_plain.length - SNIPPET_LIMIT;
     return {
       rank: index + 1,
+      id: r.id,
       title: r.title,
       category: r.category,
       subcategory: r.subcategory || undefined,
+      path: r.source_file,
       source_url: r.source_url,
       content_snippet: isTruncated
         ? r.content_plain.substring(0, SNIPPET_LIMIT) +
