@@ -26,7 +26,8 @@
   },
   "files": [
     "build",
-    "data"
+    "data",
+    "README.md"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
