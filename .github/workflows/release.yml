@@ -73,15 +73,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v${{ steps.version.outputs.VERSION }}"
-          if gh release view "$TAG" > /dev/null 2>&1; then
+          REPO="${{ github.repository }}"
+          if gh release view "$TAG" --repo "$REPO" > /dev/null 2>&1; then
             echo "Release $TAG already exists — uploading artifact"
-            gh release upload "$TAG" "feathersjs-mcp-v${{ steps.version.outputs.VERSION }}.zip" --clobber
+            gh release upload "$TAG" "feathersjs-mcp-v${{ steps.version.outputs.VERSION }}.zip" --clobber --repo "$REPO"
           else
             gh release create "$TAG" \
               "feathersjs-mcp-v${{ steps.version.outputs.VERSION }}.zip" \
               --target main \
               --title "Feathers MCP $TAG" \
-              --notes "Compiled JavaScript, documentation database, and production dependencies."
+              --notes "Compiled JavaScript, documentation database, and production dependencies." \
+              --repo "$REPO"
           fi
 
   npm-publish:
