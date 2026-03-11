@@ -1,6 +1,16 @@
 {
   "name": "feathersjs-mcp",
   "version": "1.0.0",
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "feathers-plugin",
+    "feathers",
+    "ai",
+    "cursor",
+    "vscode",
+    "claude"
+  ],
   "type": "module",
   "bin": {
     "feathersjs-mcp": "./build/index.js"
