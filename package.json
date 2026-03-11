@@ -1,9 +1,9 @@
 {
-  "name": "feathers-mcp",
+  "name": "feathersjs-mcp",
   "version": "1.0.0",
   "type": "module",
   "bin": {
-    "feathers-mcp": "./build/index.js"
+    "feathersjs-mcp": "./build/index.js"
   },
   "scripts": {
     "build": "tsc && chmod 755 build/index.js",
