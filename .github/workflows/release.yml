@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install production dependencies
+        run: npm ci --omit=dev
+
+      - name: Build
+        run: npm run build
+
+      - name: Read version from package.json
+        id: version
+        run: echo "VERSION=$(node -p \"require('./package.json').version\")" >> "$GITHUB_OUTPUT"
+
+      - name: Create release zip
+        run: zip -r "feathers-mcp-v${{ steps.version.outputs.VERSION }}.zip" build/ data/ node_modules/ package.json
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ steps.version.outputs.VERSION }}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG already exists — uploading artifact"
+            gh release upload "$TAG" "feathers-mcp-v${{ steps.version.outputs.VERSION }}.zip" --clobber
+          else
+            gh release create "$TAG" \
+              "feathers-mcp-v${{ steps.version.outputs.VERSION }}.zip" \
+              --target main \
+              --title "Feathers MCP $TAG" \
+              --notes "Compiled JavaScript, documentation database, and production dependencies."
+          fi
