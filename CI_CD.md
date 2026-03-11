@@ -41,17 +41,29 @@ Runs on every push to `main` and on every pull request. This workflow ensures th
 
 ### 2. Release (`release.yml`)
 
-Runs only on push to `main` (i.e., after a PR is merged). This workflow produces the release artifact.
+Runs only on push to `main` (i.e., after a PR is merged). This workflow has three jobs:
 
-**Steps:**
+**Build job:**
 
 1. **Checkout** the repository.
 2. **Setup Node.js 20** with npm dependency caching.
-3. **Install production dependencies** via `npm ci --omit=dev`.
+3. **Install dependencies** via `npm ci`.
 4. **Build** — compiles TypeScript to `build/`.
-5. **Read version** from `package.json` (currently `1.0.0`).
-6. **Create zip** — packages `build/`, `data/`, `node_modules/`, and `package.json` into `feathers-mcp-v1.0.0.zip`.
-7. **Create GitHub Release** — tags the commit as `v1.0.0` and attaches the zip. If the release already exists, the artifact is updated in place.
+5. **Upload artifacts** — uploads `build/`, `data/`, `package.json`, `package-lock.json`, `.vscode/`, and `.cursor/` for downstream jobs.
+
+**GitHub Release job** (runs after build):
+
+1. **Download artifacts** from the build job.
+2. **Install production dependencies** via `npm ci --omit=dev`.
+3. **Read version** from `package.json` (currently `1.0.0`).
+4. **Create zip** — packages `build/`, `data/`, `node_modules/`, `package.json`, `.vscode/`, and `.cursor/` into `feathersjs-mcp-v1.0.0.zip`.
+5. **Create GitHub Release** — tags the commit as `v1.0.0` and attaches the zip. If the release already exists, the artifact is updated in place.
+
+**npm Publish job** (runs after build, in parallel with GitHub Release):
+
+1. **Download artifacts** from the build job.
+2. **Setup Node.js 20** with npm registry URL configured.
+3. **Publish to npm** — publishes the package as `feathersjs-mcp` to the npm registry using `NPM_TOKEN`.
 
 ## Pipeline Flow
 
@@ -67,25 +79,33 @@ Runs only on push to `main` (i.e., after a PR is merged). This workflow produces
   │  npm run test:pipeline│
   │  npm run test:mcp    │
   └──────────┬───────────┘
-             │ pass
+             │ pass (on push to main only)
              ▼
   ┌──────────────────────┐
-  │   Release            │  ◄── only on push to main
+  │   Release: Build     │
   │                      │
-  │  npm ci --omit=dev   │
+  │  npm ci              │
   │  npm run build       │
-  │  zip build/ data/    │
-  │  gh release create   │
-  └──────────┬───────────┘
-             │
-             ▼
-  GitHub Release v1.0.0
-  └── feathers-mcp-v1.0.0.zip
+  │  upload artifacts    │
+  └───────┬──────┬───────┘
+          │      │
+          ▼      ▼
+  ┌────────────┐ ┌────────────┐
+  │  GitHub    │ │  npm       │
+  │  Release   │ │  Publish   │
+  │            │ │            │
+  │  zip +     │ │  npm       │
+  │  gh release│ │  publish   │
+  └─────┬──────┘ └─────┬──────┘
+        │               │
+        ▼               ▼
+  GitHub Release    npmjs.com
+  v1.0.0 .zip      feathersjs-mcp
 ```
 
 ## Release Artifact Contents
 
-The `feathers-mcp-v1.0.0.zip` release artifact contains everything needed to run the MCP server:
+The `feathersjs-mcp-v1.0.0.zip` release artifact contains everything needed to run the MCP server:
 
 | Directory/File | Description |
 |---|---|
@@ -93,12 +113,17 @@ The `feathers-mcp-v1.0.0.zip` release artifact contains everything needed to run
 | `data/` | SQLite documentation database (`contents.sqlite`) |
 | `node_modules/` | Production runtime dependencies (includes `better-sqlite3` native bindings) |
 | `package.json` | Package metadata and `bin` entry point |
+| `.vscode/` | Pre-configured VS Code MCP settings |
+| `.cursor/` | Pre-configured Cursor MCP settings |
+
+The npm package (`feathersjs-mcp`) contains `build/` and `data/` only. Dependencies are installed by the user via `npm install`.
 
 ## Test Evidence
 
 Automated tests run in CI on every push and pull request. Evidence can be found in the **Actions** tab of the GitHub repository:
 
-- **Build & Test workflow runs:** <https://github.com/nazifishrak/FeatherMCP/actions/workflows/build-and-test.yml>
-- **Release workflow runs:** <https://github.com/nazifishrak/FeatherMCP/actions/workflows/release.yml>
+- **Build & Test workflow runs:** <https://github.com/nazifishrak/FeathersMCP/actions/workflows/build-and-test.yml>
+- **Release workflow runs:** <https://github.com/nazifishrak/FeathersMCP/actions/workflows/release.yml>
+- **npm package:** <https://www.npmjs.com/package/feathersjs-mcp>
 
 Each workflow run shows step-by-step logs including full test output with pass/fail counts.
