@@ -35,6 +35,7 @@ jobs:
             data/
             package.json
             package-lock.json
+            README.md
             .vscode/
             .cursor/
 
