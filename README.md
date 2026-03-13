@@ -6,13 +6,7 @@ An MCP server that gives AI assistants access to the FeathersJS v6 documentation
 
 ## Getting Started
 
-### 1. Install the package
-
-```bash
-npm install feathersjs-mcp
-```
-
-### 2. Add the MCP config file
+### 1. Add the MCP config file
 
 **Cursor** — create `.cursor/mcp.json` in your project root:
 
@@ -54,11 +48,19 @@ npm install feathersjs-mcp
 }
 ```
 
-### 3. Use MCP tools in chat
+That's it — `npx` downloads and runs the package automatically on first use.
+
+### 2. Use MCP tools in chat
 
 Open your IDE and the FeathersJS documentation tools will be available in chat. Ask your AI assistant about FeathersJS hooks, services, authentication, or any other topic.
 
-> **Note:** For Claude Desktop and other non-project contexts, use `["-y", "feathersjs-mcp"]` in args to skip the install prompt.
+### Optional: install locally
+
+```bash
+npm install feathersjs-mcp
+```
+
+Locks the version in your `package.json` so all contributors use the same release. Also required for the troubleshooting Option B below.
 
 ## GitHub Release
 
@@ -78,13 +80,7 @@ cursor .
 code .
 ```
 
-**Option B:** Use the full path to `node` in your config. Find it by running:
-
-```bash
-which node
-```
-
-Then update the config:
+**Option B:** Install the package locally (see [Optional: install locally](#optional-install-locally)) and use the full path to `node` in your config. Find it by running `which node`, then update config file:
 
 ```json
 {
