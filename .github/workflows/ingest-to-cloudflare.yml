@@ -6,8 +6,14 @@ on:
 
 jobs:
   ingest:
-    # Only run if the issue has our specific community label
-    if: contains(github.event.issue.labels.*.name, 'community-contribution')
+    # ONLY RUN IF:
+    # 1. The issue has the 'community-contribution' label
+    # 2. The person who closed it is a maintainer (OWNER, MEMBER, or COLLABORATOR)
+    if: |
+      contains(github.event.issue.labels.*.name, 'community-contribution') &&
+      (github.event.issue.author_association == 'OWNER' || 
+       github.event.issue.author_association == 'MEMBER' || 
+       github.event.issue.author_association == 'COLLABORATOR')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
