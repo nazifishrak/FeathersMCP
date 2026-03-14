@@ -26,8 +26,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Test ingestion-to-search pipeline
-        run: npm run test:pipeline
-
-      - name: Test MCP protocol compliance
-        run: npm run test:mcp
+      - name: Run all tests
+        run: npm test
