@@ -28,7 +28,7 @@ async function handler(args: z.infer<z.ZodObject<typeof schema>>) {
     content,
     "",
     "---",
-    "_Submitted via FeatherMCP Agent_",
+    "_Submitted via FeathersMCP Agent_",
   ].join("\n");
 
   // 2. Construct the GitHub "New Issue" Magic Link

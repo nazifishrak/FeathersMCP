@@ -60,6 +60,6 @@ export default {
 			}
 		}
 
-		return new Response('FeatherMCP Cloud API: Use /search or /ingest', { status: 404 });
+		return new Response('FeathersMCP Cloud API: Use /search or /ingest', { status: 404 });
 	},
 };

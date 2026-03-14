@@ -108,6 +108,6 @@ console.log("\n============================================================");
 
 if (failCount > 0) {
   console.log(`❌ ${failCount} check(s) failed`);
-  process.exit(1);
+  process.exitCode = 1;
 }
 console.log("✅ All verification checks passed!");

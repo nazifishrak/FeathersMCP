@@ -439,15 +439,14 @@ async function main() {
   if (failCount > 0) {
     console.log(`❌ ${failCount} test(s) FAILED — see output above`);
     proc.kill();
-    process.exit(1);
+    throw new Error(`${failCount} test(s) FAILED — see output above`);
   }
   console.log("✅ All MCP protocol tests passed!");
   proc.kill();
-  process.exit(0);
 }
 
 main().catch((err) => {
   console.error("Test failed:", err);
   proc?.kill();
-  process.exit(1);
+  process.exitCode = 1;
 });

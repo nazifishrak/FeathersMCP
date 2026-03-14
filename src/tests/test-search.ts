@@ -63,7 +63,7 @@ try {
   console.log("✅ Database connection: OK\n");
 } catch (e) {
   console.error("❌ Database connection failed:", e);
-  process.exit(1);
+  throw new Error("Could not open database");
 }
 
 // Test 1: Schema
@@ -130,7 +130,7 @@ console.log("\n" + "=".repeat(60));
 if (failCount > 0) {
   console.error(`❌ ${failCount} check(s) failed`);
   closeDatabase();
-  process.exit(1);
+  process.exitCode = 1;
 }
 console.log("✅ All smoke tests passed!");
 closeDatabase();

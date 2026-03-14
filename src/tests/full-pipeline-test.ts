@@ -62,7 +62,7 @@ section("Test 1: Database exists and is reachable");
 if (!fs.existsSync(DB_PATH)) {
   fail("Database file exists", `File not found at: ${DB_PATH}`);
   console.log("\n❌ Cannot proceed without the database. Run pnpm dev in feathers/website first.");
-  process.exit(1);
+  throw new Error(`Database file not found at: ${DB_PATH}`);
 }
 pass("Database file exists");
 console.log(`  📂 Path: ${DB_PATH}`);
@@ -74,7 +74,7 @@ try {
   pass("Database connection opens");
 } catch (err) {
   fail("Database connection opens", String(err));
-  process.exit(1);
+  throw new Error(`Database connection failed: ${err}`);
 }
 
 // Verify source tables exist
@@ -113,7 +113,7 @@ try {
   pass("Tables dropped successfully");
 } catch (err) {
   fail("Tables dropped successfully", String(err));
-  process.exit(1);
+  throw new Error(`Failed to drop tables: ${err}`);
 }
 
 // Run the ingestion script and capture output
@@ -132,7 +132,7 @@ try {
 } catch (err: unknown) {
   const execError = err as { stdout?: string; stderr?: string; message?: string };
   fail("npm run ingest exited with code 0", execError.stderr || execError.message || String(err));
-  process.exit(1);
+  throw new Error(`npm run ingest failed: ${execError.stderr || execError.message || err}`);
 }
 
 // Verify counts from output
@@ -526,5 +526,5 @@ if (failed === 0) {
   console.log("\n🎉 All tests passed! The pipeline is working correctly.");
 } else {
   console.log(`\n⚠️  ${failed} test(s) failed. See details above.`);
-  process.exit(1);
+  process.exitCode = 1;
 }
