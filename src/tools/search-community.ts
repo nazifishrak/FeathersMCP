@@ -40,7 +40,7 @@ async function handler({ query }: { query: string }) {
       `### ${r.title}\n` +
       `**Author:** @${r.author} | **Tags:** ${r.tags}\n` +
       `**Excerpt:** ${r.excerpt}\n` +
-      `[Link to PR](${r.github_pr_url})\n`
+      `[Link to Issue](${r.github_issue_url})\n`
     )).join("\n---\n\n");
 
     return {
@@ -65,7 +65,7 @@ async function handler({ query }: { query: string }) {
 
 export const searchCommunityTool: ToolDefinition<typeof schema> = {
   name: "search-community",
-  description: "Search the FeatherJS community knowledgebase for tutorials, projects, and insights shared by other users. Use this alongside search-doc.",
+  description: "Search the FeathersJS community knowledgebase for tutorials, projects, and insights shared by other users. Use this alongside search-doc.",
   schema,
   handler,
 };

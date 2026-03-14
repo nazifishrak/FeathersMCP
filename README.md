@@ -64,7 +64,7 @@ Locks the version in your `package.json` so all contributors use the same releas
 
 ## GitHub Release
 
-Download the latest zip from [Releases](https://github.com/nazifishrak/FeatherMCP/releases). Extract it, open the folder in your IDE, and the MCP server is ready to use. The archive includes pre-configured `.vscode/` and `.cursor/` settings — no setup needed.
+Download the latest zip from [Releases](https://github.com/nazifishrak/FeathersMCP/releases). Extract it, open the folder in your IDE, and the MCP server is ready to use. The archive includes pre-configured `.vscode/` and `.cursor/` settings — no setup needed.
 
 ## Troubleshooting
 
@@ -80,7 +80,7 @@ cursor .
 code .
 ```
 
-**Option B:** Install the package locally (see [Optional: install locally](#optional-install-locally)) and use the full path to `node` in your config. Find it by running `which node`, then update config file:
+**Option B:** Install the package locally (see [Optional: install locally](#optional-install-locally)) and use the full path to `node` in your config. Find it by running `which node`, then update the config file:
 
 ```json
 {
@@ -98,11 +98,11 @@ Replace `/opt/homebrew/bin/node` with the output of `which node` on your machine
 ## Links
 
 - **npm:** https://www.npmjs.com/package/feathersjs-mcp
-- **GitHub:** https://github.com/nazifishrak/FeatherMCP
+- **GitHub:** https://github.com/nazifishrak/FeathersMCP
 
 ## Available Tools
 
-The server exposes 4 tools over the MCP protocol:
+The server exposes 6 tools over the MCP protocol:
 
 ### `get-schema`
 
@@ -133,3 +133,22 @@ Fetches the full content of a documentation page. Use after `search-doc` when yo
 | `title` | string | no | Exact document title (e.g. `Hooks`) |
 
 Provide at least one of `id`, `path`, or `title`. Prefer `id` or `path` for unique lookups.
+
+### `share-knowledge`
+
+Generates a pre-filled GitHub Issue link to share a tutorial or project with the FeathersJS community. Clicking the link opens a new issue with YAML frontmatter and your content already filled in. When a maintainer closes the issue, your contribution is automatically ingested into the community knowledge base.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `title` | string | yes | Title of your tutorial or project |
+| `author` | string | yes | Your GitHub username |
+| `content` | string | yes | Markdown body of your contribution |
+| `tags` | string[] | yes | Topic tags (e.g. `["hooks", "auth"]`) |
+
+### `search-community`
+
+Searches the FeathersJS community knowledge base (Cloudflare D1 with FTS5) for tutorials and projects shared by other users. Use alongside `search-doc` for comprehensive answers.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | yes | Search terms (e.g. `"jwt authentication"`) |

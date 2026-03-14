@@ -33,6 +33,15 @@ jobs:
           ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
           async function run() {
+            // Validate required environment variables
+            const workerUrl = process.env.CLOUDFLARE_WORKER_URL;
+            if (!workerUrl || !workerUrl.trim()) {
+              throw new Error(
+                'CLOUDFLARE_WORKER_URL is not set or is empty. ' +
+                'Please configure the CLOUDFLARE_WORKER_URL GitHub secret for this workflow.'
+              );
+            }
+
             const body = process.env.ISSUE_BODY;
 
             // Manual Regex-based Parsing of Frontmatter (No 'gray-matter' dependency needed!)
@@ -68,12 +77,12 @@ jobs:
               content: content,
               excerpt: content.substring(0, 200).trim() + '...',
               tags: tags,
-              pr_url: process.env.ISSUE_URL
+              issue_url: process.env.ISSUE_URL
             };
 
             console.log(`Ingesting Community Post: ${payload.title}`);
 
-            const response = await fetch(`${process.env.CLOUDFLARE_WORKER_URL}/ingest`, {
+            const response = await fetch(`${workerUrl}/ingest`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

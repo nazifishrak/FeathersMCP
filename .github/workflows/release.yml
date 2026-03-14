@@ -36,8 +36,10 @@ jobs:
             package.json
             package-lock.json
             README.md
+            LICENSE
             .vscode/
             .cursor/
+            cloud/
 
   github-release:
     name: GitHub Release
@@ -68,7 +70,7 @@ jobs:
           echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Create release zip
-        run: zip -r "feathersjs-mcp-v${{ steps.version.outputs.VERSION }}.zip" build/ data/ node_modules/ package.json .vscode/ .cursor/
+        run: zip -r "feathersjs-mcp-v${{ steps.version.outputs.VERSION }}.zip" build/ data/ node_modules/ package.json LICENSE README.md .vscode/ .cursor/ cloud/
 
       - name: Create GitHub Release
         env:

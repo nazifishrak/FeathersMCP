@@ -22,7 +22,7 @@ export default {
 						contributions.author, 
 						contributions.excerpt, 
 						contributions.tags, 
-						contributions.github_pr_url, 
+						contributions.github_issue_url, 
 						contributions.created_at 
 					 FROM contributions_fts 
 					 JOIN contributions ON contributions.id = contributions_fts.rowid 
@@ -38,20 +38,21 @@ export default {
 
 		// 2. Ingestion Endpoint: POST /ingest (Called by GitHub Action)
 		if (url.pathname === '/ingest' && request.method === 'POST') {
-			// (Security: Check Bearer Token if configured)
+			// Security: always require a Bearer token (fail-closed).
+			// If INGESTION_SECRET is not set the endpoint rejects all callers.
 			const authHeader = request.headers.get('Authorization');
-			if (env.INGESTION_SECRET && authHeader !== `Bearer ${env.INGESTION_SECRET}`) {
+			if (!env.INGESTION_SECRET || authHeader !== `Bearer ${env.INGESTION_SECRET}`) {
 				return new Response('Unauthorized', { status: 401 });
 			}
 
 			try {
 				const body = (await request.json()) as any;
-				const { title, slug, author, content, excerpt, tags, pr_url } = body;
+				const { title, slug, author, content, excerpt, tags, issue_url } = body;
 
 				await env.DB.prepare(
-					`INSERT INTO contributions (title, slug, author, content, excerpt, tags, github_pr_url) 
+					`INSERT INTO contributions (title, slug, author, content, excerpt, tags, github_issue_url) 
 					 VALUES (?, ?, ?, ?, ?, ?, ?)`
-				).bind(title, slug, author, content, excerpt, tags, pr_url).run();
+				).bind(title, slug, author, content, excerpt, tags, issue_url).run();
 
 				return new Response('Content ingested successfully', { status: 201 });
 			} catch (e: any) {

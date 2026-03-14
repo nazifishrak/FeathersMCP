@@ -62,11 +62,15 @@ FeathersMCP is an **MCP (Model Context Protocol) server** that gives LLMs (like 
 │                    MCP Server (stdio)                        │
 │  src/index.ts                                               │
 │                                                             │
-│  4 tools:                                                   │
-│    🔍 search-doc  — Full-text search with BM25 ranking      │
-│    📄 get-doc     — Retrieve full content of a single page   │
-│    📋 get-schema  — Show database structure                  │
-│    📂 get-menu    — Browse documentation by category         │
+│  6 tools:                                                   │
+│    🔍 search-doc        — Full-text search with BM25 ranking │
+│    📄 get-doc           — Retrieve full content of a page   │
+│    📋 get-schema        — Show database structure           │
+│    📂 get-menu          — Browse documentation by category  │
+│    🌐 share-knowledge   — Generate GitHub Issue URL to      │
+│                           contribute to the community KB    │
+│    🔎 search-community  — Search the Cloudflare-hosted      │
+│                           community knowledge base          │
 │                                                             │
 │  Communicates via JSON-RPC over stdin/stdout                 │
 └─────────────────────┬───────────────────────────────────────┘
@@ -100,11 +104,11 @@ Our ingestion script reads those 4 tables and creates:
 2. A **`documents_fts`** FTS5 virtual table for full-text search with BM25 relevance ranking
 
 ### Stage 3: MCP Server (`npm start`)
-The server starts, connects to the bundled SQLite database, and exposes 4 tools over the MCP protocol (JSON-RPC over stdio).
+The server starts, connects to the bundled SQLite database, and exposes 6 tools over the MCP protocol (JSON-RPC over stdio).
 
 ### Stage 4: LLM Interaction
 1. LLM client (e.g., Claude Desktop) connects to our server
-2. Client calls `tools/list` to discover our 4 tools
+2. Client calls `tools/list` to discover our 6 tools
 3. User asks "How do hooks work in Feathers?"
 4. LLM calls `search-doc` with `{"query": "hooks"}`
 5. We run an FTS5 search, return truncated results
@@ -125,17 +129,24 @@ FeathersMCP/
 │   │   ├── get-doc.ts            # MCP tool: fetch full page by title/id/path
 │   │   ├── get-menu.ts           # MCP tool: browse docs by category
 │   │   ├── get-schema.ts         # MCP tool: show database structure
-│   │   └── search-doc.ts         # MCP tool: full-text search
+│   │   ├── search-doc.ts         # MCP tool: full-text search
+│   │   ├── share-knowledge.ts    # MCP tool: generate GitHub Issue URL
+│   │   └── search-community.ts   # MCP tool: query community knowledge base
 │   ├── types/
 │   │   └── tool.ts               # TypeScript types for tool definitions
 │   ├── scripts/
 │   │   └── ingest.ts             # Ingestion script (minimark → documents table)
 │   └── tests/
 │       ├── test-search.ts        # Smoke test: database queries
-│       ├── test-mcp-protocol.ts  # Integration test: full MCP protocol
+│       ├── test-mcp-protocol.ts  # Integration test: full MCP protocol (20 checks)
 │       ├── verify-css-fix.ts     # Verification: CSS noise removal
 │       ├── full-pipeline-test.ts # End-to-end pipeline test
 │       └── drop-tables.ts       # Utility: reset tables for re-ingestion
+├── cloud/                        # Cloudflare Worker (community knowledge base)
+│   ├── schema.sql               # D1 schema: contributions table + FTS5
+│   ├── wrangler.toml            # Cloudflare Worker config (name, D1 binding)
+│   └── src/
+│       └── index.ts             # Worker: GET /search, POST /ingest (auth required)
 ├── data/
 │   └── contents.sqlite           # Pre-built database (bundled with package)
 ├── build/                        # Compiled JS output (git-ignored)
@@ -161,7 +172,8 @@ The simplest file in the project. It does three things:
 
 ```typescript
 // This is essentially the whole file:
-const server = new McpServer({ name: "FeathersJSMCP", version: "1.0.0" });
+const { version } = require('../package.json');  // always in sync with package.json
+const server = new McpServer({ name: "FeathersJSMCP", version });
 tools.forEach(tool => server.registerTool(tool.name, tool.schema, tool.handler));
 await server.connect(new StdioServerTransport());
 ```
@@ -265,9 +277,36 @@ Returns all 47 documents organized by category. No input parameters. This helps 
 
 ---
 
-### `src/tools/index.ts` — Tool Barrel (8 lines)
+### `src/tools/share-knowledge.ts` — Share Knowledge Tool
 
-Simple barrel file that imports all 3 tools and exports them as an array. This is what `index.ts` imports to register everything.
+Generates a pre-filled GitHub Issue URL that community members can click to submit a tutorial or project. No network calls — purely a URL builder.
+
+**Input schema:** `{ title, author, content, tags }`
+
+The handler formats the contribution as YAML frontmatter + Markdown, constructs a `https://github.com/nazifishrak/FeathersMCP/issues/new?...&labels=community-contribution` link, and returns it to the user. When a maintainer closes the issue the `ingest-to-cloudflare.yml` workflow automatically POSTs the content to the Cloudflare Worker.
+
+---
+
+### `src/tools/search-community.ts` — Search Community Tool
+
+Makes a live `fetch()` to the Cloudflare Worker (`GET /search?q=<query>`) and returns Markdown-formatted results. Handles network errors gracefully by returning descriptive text instead of throwing.
+
+**Input schema:** `{ query }`
+
+---
+
+### `cloud/src/index.ts` — Cloudflare Worker
+
+Two endpoints backed by a Cloudflare D1 (SQLite) database:
+
+- **`GET /search?q=<keyword>`** — FTS5 ranked search over the community `contributions` table. Returns up to 10 results as JSON.
+- **`POST /ingest`** — Bearer-token-protected ingestion endpoint called by the GitHub Actions workflow. Always requires a valid `INGESTION_SECRET` (fail-closed by default).
+
+---
+
+### `src/tools/index.ts` — Tool Barrel
+
+Simple barrel file that imports all 6 tools and exports them as an array. This is what `src/index.ts` imports to register everything with the MCP server.
 
 ---
 
@@ -320,7 +359,7 @@ The biggest file. Reads raw Nuxt Content data and transforms it into our searcha
 | File | What It Tests | Run With |
 |------|-------------|----------|
 | `test-search.ts` | Core database functions: `getSchema()`, `getMenuStructure()`, `searchDocumentation()` with 5 different queries | `npm run test:search` |
-| `test-mcp-protocol.ts` | Full MCP protocol over stdio: initialize handshake, tool listing, all 3 tool calls, response validation | `npm run test:mcp` |
+| `test-mcp-protocol.ts` | Full MCP protocol over stdio: initialize handshake, tool listing (6 tools), all tool calls, response validation. Exits with code 1 on any failure. | `npm run test:mcp` |
 | `verify-css-fix.ts` | Checks every document for CSS noise artifacts, validates content quality | `npm run test:css` |
 | `full-pipeline-test.ts` | End-to-end: drops tables, re-ingests, verifies counts, tests incremental updates, content quality, FTS integrity, search relevance | `npm run test:pipeline` |
 | `drop-tables.ts` | Utility to drop `documents` and FTS tables for a clean re-ingestion | `npx tsx src/tests/drop-tables.ts` |
@@ -558,7 +597,7 @@ cp ../feathers/website/.data/content/contents.sqlite data/contents.sqlite
 ### Running Tests
 ```bash
 npm run test:search    # Quick smoke test (5 queries)
-npm run test:mcp       # Full MCP protocol test (8 checks)
+npm run test:mcp       # Full MCP protocol test (20 checks; exits 1 on failure)
 npm run test:css       # Verify no CSS noise in content
 npm run test:pipeline  # Full end-to-end pipeline test
 ```

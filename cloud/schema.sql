@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS contributions (
     content TEXT NOT NULL,
     excerpt TEXT,
     tags TEXT,
-    github_pr_url TEXT,
+    github_issue_url TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

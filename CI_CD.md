@@ -2,7 +2,7 @@
 
 ## Pipeline Link
 
-**GitHub Actions:** <https://github.com/nazifishrak/FeatherMCP/actions>
+**GitHub Actions:** <https://github.com/nazifishrak/FeathersMCP/actions>
 
 | Workflow | File | Runs on |
 |---|---|---|

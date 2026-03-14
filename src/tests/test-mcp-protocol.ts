@@ -1,6 +1,8 @@
 /**
  * Full MCP Protocol Test — tests the server over stdio just like a real client would.
  * Sends JSON-RPC messages and validates responses.
+ *
+ * Exits with code 1 if any assertion fails, 0 if all pass.
  */
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
@@ -13,6 +15,16 @@ const serverPath = path.resolve(__dirname, "../../build/index.js");
 let proc: ChildProcess;
 let buffer = "";
 let messageQueue: ((msg: any) => void)[] = [];
+let failCount = 0;
+
+function check(cond: boolean, passMsg: string, failMsg: string): void {
+  if (cond) {
+    console.log(`  ✅ ${passMsg}`);
+  } else {
+    console.log(`  ❌ ${failMsg}`);
+    failCount++;
+  }
+}
 
 function sendRequest(id: number, method: string, params?: any): Promise<any> {
   return new Promise((resolve) => {
@@ -79,12 +91,12 @@ async function main() {
   console.log("  Server version:", initRes.result?.serverInfo?.version);
   console.log("  Capabilities:", JSON.stringify(initRes.result?.capabilities));
   const hasTools = initRes.result?.capabilities?.tools;
-  console.log(hasTools ? "  ✅ Tools capability advertised" : "  ❌ No tools capability");
+  check(!!hasTools, "Tools capability advertised", "No tools capability");
 
   // Send initialized notification
   proc.stdin!.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
 
-  // Test 2: List tools
+  // Test 2: List tools — expect 6 (get-schema, get-menu, search-doc, get-doc, share-knowledge, search-community)
   console.log("\n── Test 2: tools/list ──");
   const toolsRes = await sendRequest(2, "tools/list", {});
   const tools = toolsRes.result?.tools || [];
@@ -94,7 +106,13 @@ async function main() {
     const params = Object.keys(tool.inputSchema?.properties || {});
     console.log(`      Parameters: ${params.length > 0 ? params.join(", ") : "(none)"}`);
   }
-  console.log(tools.length === 4 ? "  ✅ All 4 tools registered" : `  ❌ Expected 4 tools, got ${tools.length}`);
+  check(tools.length === 6, "All 6 tools registered", `Expected 6 tools, got ${tools.length}`);
+  const toolNames = tools.map((t: any) => t.name);
+  check(
+    toolNames.includes("share-knowledge") && toolNames.includes("search-community"),
+    "share-knowledge and search-community are present",
+    `Missing tools — found: ${toolNames.join(", ")}`,
+  );
 
   // Test 3: Call get-schema
   console.log("\n── Test 3: tools/call get-schema ──");
@@ -107,12 +125,11 @@ async function main() {
   const tableNames = schemaData.map((t: any) => t.table_name);
   console.log("  Tables returned:", tableNames.join(", "));
   console.log("  Table count:", schemaData.length);
-  if (schemaData.length === 1 && tableNames[0] === "documents") {
-    console.log("  ✅ Schema correctly returns only 'documents' table");
-  } else {
-    console.log("  ❌ Schema should return only 'documents' table");
-  }
-  // Show columns (format: ["id (INTEGER)", "title (TEXT)", ...])
+  check(
+    schemaData.length === 1 && tableNames[0] === "documents",
+    "Schema correctly returns only 'documents' table",
+    "Schema should return only 'documents' table",
+  );
   const cols = schemaData[0]?.columns || [];
   console.log("  Columns:", cols.join(", "));
 
@@ -133,7 +150,7 @@ async function main() {
     console.log(`    ${cat}: ${count} documents`);
   }
   console.log(`  Total: ${totalMenuDocs} documents`);
-  console.log(totalMenuDocs === 47 ? "  ✅ All 47 documents in menu" : `  ❌ Expected 47, got ${totalMenuDocs}`);
+  check(totalMenuDocs === 47, "All 47 documents in menu", `Expected 47, got ${totalMenuDocs}`);
 
   // Test 5: Call search-doc with basic query
   console.log("\n── Test 5: tools/call search-doc (basic) ──");
@@ -152,18 +169,15 @@ async function main() {
     const hasCSS = (r.content_snippet || "").includes("pre.shiki");
     console.log(`    📄 [${r.category}] ${r.title}: ${snippetLen} chars snippet, ${codeCount}/${r.total_code_examples} code blocks${hasCSS ? " ❌ HAS CSS!" : ""}`);
   }
-  // Check truncation
   const anyOverLimit = (searchData.results || []).some((r: any) => {
     const snippet = r.content_snippet || "";
-    // 1200 char limit + truncation message (~80 chars)
     return snippet.length > 1300;
   });
   const anyOver3Code = (searchData.results || []).some((r: any) => (r.code_examples?.length || 0) > 3);
-  console.log(anyOverLimit ? "  ❌ Some content_snippet > 1200 chars (truncation failed)" : "  ✅ content_snippet truncated to ≤1200 chars");
-  console.log(anyOver3Code ? "  ❌ Some results have > 3 code examples" : "  ✅ code_examples limited to ≤3");
-  // Check no CSS noise
   const anyCSS = (searchData.results || []).some((r: any) => (r.content_snippet || "").includes("pre.shiki"));
-  console.log(anyCSS ? "  ❌ CSS noise found in results!" : "  ✅ No CSS noise in search results");
+  check(!anyOverLimit, "content_snippet truncated to ≤1200 chars", "Some content_snippet > 1200 chars (truncation failed)");
+  check(!anyOver3Code, "code_examples limited to ≤3", "Some results have > 3 code examples");
+  check(!anyCSS, "No CSS noise in search results", "CSS noise found in results!");
 
   // Test 6: Call search-doc with category filter
   console.log("\n── Test 6: tools/call search-doc (with category) ──");
@@ -176,7 +190,7 @@ async function main() {
   console.log("  Query:", catData.query, "| Category:", catData.category);
   console.log("  Result count:", catData.result_count);
   const allApi = (catData.results || []).every((r: any) => r.category === "api");
-  console.log(allApi ? "  ✅ All results are from 'api' category" : "  ❌ Some results from wrong category");
+  check(allApi, "All results are from 'api' category", "Some results from wrong category");
 
   // Test 7: Call search-doc with no results
   console.log("\n── Test 7: tools/call search-doc (no results) ──");
@@ -189,7 +203,7 @@ async function main() {
   console.log("  Results:", emptyData.results?.length);
   console.log("  Message:", emptyData.message?.substring(0, 60));
   console.log("  Has suggestions:", !!emptyData.suggestions);
-  console.log(emptyData.results?.length === 0 ? "  ✅ Zero results handled correctly" : "  ❌ Should return 0 results");
+  check(emptyData.results?.length === 0, "Zero results handled correctly", "Should return 0 results");
 
   // Test 8: Call get-doc by title
   console.log("\n── Test 8: tools/call get-doc (by title) ──");
@@ -204,11 +218,11 @@ async function main() {
   console.log("  Content length:", getDocData.content?.length || 0, "chars");
   console.log("  Code examples:", getDocData.code_examples?.length || 0);
   console.log("  Source URL:", getDocData.source_url);
-  if (getDocData.title === "Hooks" && (getDocData.content?.length || 0) > 1000) {
-    console.log("  ✅ get-doc returns full untruncated content");
-  } else {
-    console.log("  ❌ get-doc response missing or incomplete");
-  }
+  check(
+    getDocData.title === "Hooks" && (getDocData.content?.length || 0) > 1000,
+    "get-doc returns full untruncated content",
+    "get-doc response missing or incomplete",
+  );
 
   // Test 9: Call get-doc by path
   console.log("\n── Test 9: tools/call get-doc (by path) ──");
@@ -222,11 +236,11 @@ async function main() {
   console.log("  Category:", getDocByPathData.category);
   console.log("  Content length:", getDocByPathData.content?.length || 0, "chars");
   console.log("  Source URL:", getDocByPathData.source_url);
-  if (getDocByPathData.title === "Hooks" && (getDocByPathData.content?.length || 0) > 1000) {
-    console.log("  ✅ get-doc by path returns correct document");
-  } else {
-    console.log("  ❌ get-doc by path returned wrong or incomplete document");
-  }
+  check(
+    getDocByPathData.title === "Hooks" && (getDocByPathData.content?.length || 0) > 1000,
+    "get-doc by path returns correct document",
+    "get-doc by path returned wrong or incomplete document",
+  );
 
   // Test 10: Call get-doc by id (use id=1 from menu)
   console.log("\n── Test 10: tools/call get-doc (by id) ──");
@@ -244,11 +258,11 @@ async function main() {
   console.log("  Title:", getDocByIdData.title);
   console.log("  Category:", getDocByIdData.category);
   console.log("  Content length:", getDocByIdData.content?.length || 0, "chars");
-  if (getDocByIdData.title === firstDocTitle && (getDocByIdData.content?.length || 0) > 0) {
-    console.log(`  ✅ get-doc by id returns correct document ("${firstDocTitle}")`);
-  } else {
-    console.log(`  ❌ get-doc by id expected "${firstDocTitle}", got "${getDocByIdData.title}"`);
-  }
+  check(
+    getDocByIdData.title === firstDocTitle && (getDocByIdData.content?.length || 0) > 0,
+    `get-doc by id returns correct document ("${firstDocTitle}")`,
+    `get-doc by id expected "${firstDocTitle}", got "${getDocByIdData.title}"`,
+  );
 
   // Test 11: get-doc by path and by title return the same document
   console.log("\n── Test 11: tools/call get-doc (consistency: title vs path) ──");
@@ -258,11 +272,11 @@ async function main() {
   const pathCodeCount = getDocByPathData.code_examples?.length || 0;
   console.log(`  By title: "${getDocData.title}" — ${titleContent} chars, ${titleCodeCount} code examples`);
   console.log(`  By path:  "${getDocByPathData.title}" — ${pathContent} chars, ${pathCodeCount} code examples`);
-  if (getDocData.title === getDocByPathData.title && titleContent === pathContent && titleCodeCount === pathCodeCount) {
-    console.log("  ✅ Title and path lookups return identical content");
-  } else {
-    console.log("  ❌ Title and path lookups returned different results");
-  }
+  check(
+    getDocData.title === getDocByPathData.title && titleContent === pathContent && titleCodeCount === pathCodeCount,
+    "Title and path lookups return identical content",
+    "Title and path lookups returned different results",
+  );
 
   // Test 12: get-doc with no arguments returns error
   console.log("\n── Test 12: tools/call get-doc (no arguments) ──");
@@ -278,7 +292,11 @@ async function main() {
     "";
   const noArgMessage = noArgContent || noArgError;
   console.log("  Response:", noArgMessage.substring(0, 80));
-  console.log(noArgMessage.toLowerCase().includes("provide") ? "  ✅ Missing-argument error handled" : "  ❌ No error message for empty arguments");
+  check(
+    noArgMessage.toLowerCase().includes("provide"),
+    "Missing-argument error handled",
+    "No error message for empty arguments",
+  );
 
   // Test 13: get-doc with non-existent title
   console.log("\n── Test 13: tools/call get-doc (title not found) ──");
@@ -288,7 +306,11 @@ async function main() {
   });
   const notFoundContent = notFoundRes.result?.content?.[0]?.text || "";
   console.log("  Response:", notFoundContent.substring(0, 80));
-  console.log(notFoundContent.includes("No document found") ? "  ✅ Not-found by title handled gracefully" : "  ❌ Missing not-found message");
+  check(
+    notFoundContent.includes("No document found"),
+    "Not-found by title handled gracefully",
+    "Missing not-found message",
+  );
 
   // Test 14: get-doc with non-existent path
   console.log("\n── Test 14: tools/call get-doc (path not found) ──");
@@ -298,7 +320,11 @@ async function main() {
   });
   const notFoundPathContent = notFoundPathRes.result?.content?.[0]?.text || "";
   console.log("  Response:", notFoundPathContent.substring(0, 80));
-  console.log(notFoundPathContent.includes("No document found") ? "  ✅ Not-found by path handled gracefully" : "  ❌ Missing not-found message for path");
+  check(
+    notFoundPathContent.includes("No document found"),
+    "Not-found by path handled gracefully",
+    "Missing not-found message for path",
+  );
 
   // Test 15: get-doc with non-existent id
   console.log("\n── Test 15: tools/call get-doc (id not found) ──");
@@ -308,7 +334,11 @@ async function main() {
   });
   const notFoundIdContent = notFoundIdRes.result?.content?.[0]?.text || "";
   console.log("  Response:", notFoundIdContent.substring(0, 80));
-  console.log(notFoundIdContent.includes("No document found") ? "  ✅ Not-found by id handled gracefully" : "  ❌ Missing not-found message for id");
+  check(
+    notFoundIdContent.includes("No document found"),
+    "Not-found by id handled gracefully",
+    "Missing not-found message for id",
+  );
 
   // Test 16: get-doc returns full content (not truncated like search-doc)
   console.log("\n── Test 16: tools/call get-doc (full content vs search snippet) ──");
@@ -326,11 +356,11 @@ async function main() {
     console.log(`  search-doc snippet: ${searchSnippetLen} chars`);
     console.log(`  get-doc full content: ${fullContentLen} chars`);
     console.log(`  get-doc code examples: ${fullAuthData.code_examples?.length || 0} (all), search-doc: ${searchHooksResult.code_examples?.length || 0} (capped at 3)`);
-    if (fullContentLen >= searchSnippetLen) {
-      console.log("  ✅ get-doc returns content ≥ search snippet (no truncation)");
-    } else {
-      console.log("  ❌ get-doc returned less content than search snippet");
-    }
+    check(
+      fullContentLen >= searchSnippetLen,
+      "get-doc returns content ≥ search snippet (no truncation)",
+      "get-doc returned less content than search snippet",
+    );
   } else {
     console.log("  ⚠️  Skipped — 'Authentication' not in search results for comparison");
   }
@@ -347,9 +377,9 @@ async function main() {
   const hasBase64 = /data:[a-z]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/.test(allCode);
   console.log(`  Document: "${uploadsData.title}"`);
   console.log(`  Code examples: ${uploadsData.code_examples?.length || 0}`);
-  console.log(hasBase64 ? "  ❌ Base64 data URIs found in code examples!" : "  ✅ No base64 data URIs in code (stripped correctly)");
+  check(!hasBase64, "No base64 data URIs in code (stripped correctly)", "Base64 data URIs found in code examples!");
 
-  // Test 18: Measure total response size
+  // Test 18: Measure total response size (soft warning — does not fail the suite)
   console.log("\n── Test 18: Response size check ──");
   console.log(`  Schema response: ${schemaContent.length} chars`);
   console.log(`  Menu response: ${menuContent.length} chars`);
@@ -361,10 +391,57 @@ async function main() {
   console.log(`  Total (unique): ${totalSize} chars`);
   console.log(searchContent.length < 15000 ? "  ✅ Search response is reasonably sized" : "  ⚠️  Search response may be large");
 
+  // Test 19: share-knowledge returns a pre-filled GitHub Issue URL
+  console.log("\n── Test 19: tools/call share-knowledge ──");
+  const shareRes = await sendRequest(19, "tools/call", {
+    name: "share-knowledge",
+    arguments: {
+      title: "My Test Guide",
+      author: "tester",
+      content: "Some useful content about FeathersJS hooks.",
+      tags: ["hooks", "tutorial"],
+    },
+  });
+  const shareText = shareRes.result?.content?.[0]?.text || "";
+  console.log("  Response preview:", shareText.substring(0, 120));
+  check(
+    shareText.includes("github.com"),
+    "share-knowledge response contains a GitHub URL",
+    "share-knowledge response missing GitHub URL",
+  );
+  check(
+    shareText.includes("community-contribution"),
+    "share-knowledge URL includes community-contribution label",
+    "share-knowledge URL missing community-contribution label",
+  );
+
+  // Test 20: search-community returns a valid response (results or graceful no-results)
+  console.log("\n── Test 20: tools/call search-community ──");
+  const communityRes = await sendRequest(20, "tools/call", {
+    name: "search-community",
+    arguments: { query: "feathers hooks" },
+  });
+  const communityText = communityRes.result?.content?.[0]?.text || "";
+  console.log("  Response preview:", communityText.substring(0, 120));
+  const isCommunityValid =
+    communityText.includes("Found the following") ||
+    communityText.includes("No community posts found") ||
+    communityText.includes("Community Search Error") ||
+    communityText.includes("Failed to search");
+  check(
+    isCommunityValid && communityText.length > 0,
+    "search-community returns a valid response",
+    "search-community returned empty or unrecognised response",
+  );
+
   // Done
   console.log("\n============================================================");
-  console.log("✅ All MCP protocol tests complete!");
-
+  if (failCount > 0) {
+    console.log(`❌ ${failCount} test(s) FAILED — see output above`);
+    proc.kill();
+    process.exit(1);
+  }
+  console.log("✅ All MCP protocol tests passed!");
   proc.kill();
   process.exit(0);
 }
