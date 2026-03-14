@@ -11,8 +11,8 @@ jobs:
     # 2. The person who closed it is a maintainer (OWNER, MEMBER, or COLLABORATOR)
     if: |
       contains(github.event.issue.labels.*.name, 'community-contribution') &&
-      (github.event.issue.author_association == 'OWNER' ||
-       github.event.issue.author_association == 'MEMBER' ||
+      (github.event.issue.author_association == 'OWNER' || 
+       github.event.issue.author_association == 'MEMBER' || 
        github.event.issue.author_association == 'COLLABORATOR')
     runs-on: ubuntu-latest
     steps:
@@ -22,12 +22,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
-      - name: Install dependencies
-        run: npm install gray-matter
-
-      - name: Parse and Ingest to Cloudflare
+      - name: Ingest to Cloudflare
         shell: node {0}
         env:
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
@@ -35,26 +32,43 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
-          const matter = require('gray-matter');
-
           async function run() {
             const body = process.env.ISSUE_BODY;
-            const { data, content } = matter(body);
+            
+            // Manual Regex-based Parsing of Frontmatter (No 'gray-matter' dependency needed!)
+            const titleMatch = body.match(/title:\s*["'](.+?)["']/);
+            const authorMatch = body.match(/author:\s*["'](.+?)["']/);
+            const tagsMatch = body.match(/tags:\s*(\[.+?\])/);
+            
+            // Extract the main content (everything after the second '---')
+            const contentParts = body.split('---');
+            const content = contentParts.length > 2 ? contentParts.slice(2).join('---').trim() : body;
 
-            // If frontmatter is missing (not formatted by Agent), we skip or try to infer
-            if (!data.title) {
-              console.log('Skipping issue: No valid frontmatter title found.');
+            if (!titleMatch) {
+              console.log('Skipping ingestion: Could not find title in issue body frontmatter.');
               return;
             }
 
+            const title = titleMatch[1];
+            const author = authorMatch ? authorMatch[1] : 'unknown';
+            let tags = '';
+            try {
+              if (tagsMatch) {
+                const tagsArray = JSON.parse(tagsMatch[1]);
+                tags = Array.isArray(tagsArray) ? tagsArray.join(',') : tagsArray;
+              }
+            } catch (e) {
+              console.error('Failed to parse tags:', e);
+            }
+
             const payload = {
-              title: data.title,
-              slug: data.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
-              author: data.author || 'unknown',
+              title: title,
+              slug: title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
+              author: author,
               content: content,
               excerpt: content.substring(0, 200).trim() + '...',
-              tags: data.tags ? (Array.isArray(data.tags) ? data.tags.join(',') : data.tags) : '',
-              pr_url: process.env.ISSUE_URL // Using Issue URL as the reference link
+              tags: tags,
+              pr_url: process.env.ISSUE_URL
             };
 
             console.log(`Ingesting Community Post: ${payload.title}`);
@@ -72,7 +86,7 @@ jobs:
               const error = await response.text();
               throw new Error(`Cloudflare Ingestion failed: ${error}`);
             }
-            console.log(`Successfully ingested post from Issue #${process.env.ISSUE_URL.split('/').pop()}`);
+            console.log(`Successfully ingested post from Issue: ${payload.title}`);
           }
 
           run().catch(err => {
