@@ -1,0 +1,13 @@
+name = "feathermcp-api"
+main = "src/index.ts"
+compatibility_date = "2024-05-20"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB" # This is what you'll use in your code as env.DB
+database_name = "feathermcp-db"
+database_id = "4c29c098-2a57-4d9c-b873-26268223cbcb"
+
+[vars]
+# You'll put your ingestion secret here (e.g., matching the GitHub Action)
+# INGESTION_SECRET = "your-secret-key"

@@ -1,0 +1,75 @@
+name: Sync Community Posts to Cloudflare
+
+on:
+  issues:
+    types: [closed]
+
+jobs:
+  ingest:
+    # Only run if the issue has our specific community label
+    if: contains(github.event.issue.labels.*.name, 'community-contribution')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install gray-matter
+
+      - name: Parse and Ingest to Cloudflare
+        shell: node {0}
+        env:
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+          INGESTION_SECRET: ${{ secrets.INGESTION_SECRET }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          const matter = require('gray-matter');
+
+          async function run() {
+            const body = process.env.ISSUE_BODY;
+            const { data, content } = matter(body);
+
+            // If frontmatter is missing (not formatted by Agent), we skip or try to infer
+            if (!data.title) {
+              console.log('Skipping issue: No valid frontmatter title found.');
+              return;
+            }
+
+            const payload = {
+              title: data.title,
+              slug: data.title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
+              author: data.author || 'unknown',
+              content: content,
+              excerpt: content.substring(0, 200).trim() + '...',
+              tags: data.tags ? (Array.isArray(data.tags) ? data.tags.join(',') : data.tags) : '',
+              pr_url: process.env.ISSUE_URL // Using Issue URL as the reference link
+            };
+
+            console.log(`Ingesting Community Post: ${payload.title}`);
+
+            const response = await fetch(`${process.env.CLOUDFLARE_WORKER_URL}/ingest`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.INGESTION_SECRET}`
+              },
+              body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+              const error = await response.text();
+              throw new Error(`Cloudflare Ingestion failed: ${error}`);
+            }
+            console.log(`Successfully ingested post from Issue #${process.env.ISSUE_URL.split('/').pop()}`);
+          }
+
+          run().catch(err => {
+            console.error(err);
+            process.exit(1);
+          });
