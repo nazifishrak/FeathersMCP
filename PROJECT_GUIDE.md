@@ -135,13 +135,13 @@ FeathersMCP/
 │   ├── types/
 │   │   └── tool.ts               # TypeScript types for tool definitions
 │   ├── scripts/
-│   │   └── ingest.ts             # Ingestion script (minimark → documents table)
+│   │   ├── ingest.ts             # Ingestion script (minimark → documents table)
+│   │   └── drop-tables.ts       # Utility: reset tables for re-ingestion
 │   └── tests/
 │       ├── test-search.ts        # Smoke test: database queries
 │       ├── test-mcp-protocol.ts  # Integration test: full MCP protocol (20 checks)
 │       ├── verify-css-fix.ts     # Verification: CSS noise removal
-│       ├── full-pipeline-test.ts # End-to-end pipeline test
-│       └── drop-tables.ts       # Utility: reset tables for re-ingestion
+│       └── full-pipeline-test.ts # End-to-end pipeline test
 ├── cloud/                        # Cloudflare Worker (community knowledge base)
 │   ├── schema.sql               # D1 schema: contributions table + FTS5
 │   ├── wrangler.toml            # Cloudflare Worker config (name, D1 binding)
@@ -362,7 +362,6 @@ The biggest file. Reads raw Nuxt Content data and transforms it into our searcha
 | `test-mcp-protocol.ts` | Full MCP protocol over stdio: initialize handshake, tool listing (6 tools), all tool calls, response validation. Exits with code 1 on any failure. | `npm run test:mcp` |
 | `verify-css-fix.ts` | Checks every document for CSS noise artifacts, validates content quality | `npm run test:css` |
 | `full-pipeline-test.ts` | End-to-end: drops tables, re-ingests, verifies counts, tests incremental updates, content quality, FTS integrity, search relevance | `npm run test:pipeline` |
-| `drop-tables.ts` | Utility to drop `documents` and FTS tables for a clean re-ingestion | `npx tsx src/tests/drop-tables.ts` |
 
 ---
 
@@ -587,7 +586,7 @@ Only needed if the FeathersJS website content changes:
 cd ../feathers/website && npx nuxt build
 
 # 2. Drop old tables and re-ingest
-npx tsx src/tests/drop-tables.ts
+npm run drop
 npm run ingest
 
 # 3. Copy the fresh DB to the bundled location
@@ -632,7 +631,7 @@ Edit the `handler` function in `src/tools/search-doc.ts`. The `formattedResults`
 ### "The database seems corrupted or out of date"
 
 ```bash
-npx tsx src/tests/drop-tables.ts   # Reset tables
+npm run drop                        # Reset tables
 npm run ingest                      # Re-ingest from source
 cp ../feathers/website/.data/content/contents.sqlite data/contents.sqlite
 npm run test:search                 # Verify

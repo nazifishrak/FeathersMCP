@@ -2,12 +2,16 @@
 /**
  * Quick smoke test for the documentation database.
  *
- * Run with: npx tsx src/scripts/test-search.ts [path-to-contents.sqlite]
+ * Run with: npm run test:search
+ * 
+ * Or run with: npx tsx src/tests/test-search.ts [path/to/contents.sqlite]
  *
- * This tests the key functions that MCP tools rely on:
- *   1. getSchema() — database structure
- *   2. getMenuStructure() — navigation tree
+ * Tests the key functions that MCP tools rely on:
+ *   1. getSchema()         — database structure
+ *   2. getMenuStructure()  — navigation tree
  *   3. searchDocumentation() — FTS5 search with various queries
+ *
+ * Exits with code 1 if any check fails.
  */
 
 import {
@@ -35,7 +39,18 @@ function findDbPath(): string {
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;
   }
-  return candidates[0]; // Fall through — getDatabase() will throw a clear error
+  return candidates[0];
+}
+
+let failCount = 0;
+
+function check(cond: boolean, passMsg: string, failMsg: string): void {
+  if (cond) {
+    console.log(`  ✅ ${passMsg}`);
+  } else {
+    console.log(`  ❌ ${failMsg}`);
+    failCount++;
+  }
 }
 
 console.log("🧪 FeathersJS Documentation Database — Smoke Test");
@@ -54,29 +69,42 @@ try {
 // Test 1: Schema
 console.log("── Test 1: getSchema() ──");
 const schema = getSchema();
-console.log(`  Found ${schema.length} tables:`);
+console.log(`  Found ${schema.length} table(s):`);
 for (const t of schema) {
   console.log(`    ${t.table_name} (${t.columns.length} columns)`);
 }
+check(schema.length >= 1, "Schema returns at least 1 table", "Schema returned no tables");
+check(
+  schema.some((t) => t.table_name === "documents"),
+  'Schema includes the "documents" table',
+  'Schema is missing the "documents" table',
+);
 console.log();
 
 // Test 2: Menu Structure
 console.log("── Test 2: getMenuStructure() ──");
 const menu = getMenuStructure();
+let totalMenuDocs = 0;
 for (const [category, items] of Object.entries(menu)) {
   console.log(`  ${category}: ${items.length} documents`);
   for (const item of items.slice(0, 3)) {
     console.log(`    - ${item.title}`);
   }
   if (items.length > 3) console.log(`    ... and ${items.length - 3} more`);
+  totalMenuDocs += items.length;
 }
+const requiredCategories = ["api", "cookbook", "ecosystem", "guides"];
+for (const cat of requiredCategories) {
+  check(cat in menu, `Category "${cat}" present in menu`, `Category "${cat}" missing from menu`);
+}
+check(totalMenuDocs >= 47, `Menu contains ${totalMenuDocs} documents (≥47)`, `Menu only has ${totalMenuDocs} documents, expected ≥47`);
 console.log();
 
 // Test 3: Search
 const testQueries = [
   { query: "authentication", category: undefined, description: "Basic keyword search" },
   { query: "how do hooks work in feathers", category: undefined, description: "Natural language query" },
-  { query: "cloudflare deploy", category: "cookbook", description: "Category-filtered search" },
+  { query: "file upload multer", category: "cookbook", description: "Category-filtered search" },
   { query: "services", category: "api", description: "API-only search" },
   { query: "jwt token", category: undefined, description: "Multi-keyword search" },
 ];
@@ -88,19 +116,21 @@ for (const test of testQueries) {
 
   const results = searchDocumentation(test.query, test.category, 3);
 
-  if (results.length === 0) {
-    console.log("  ⚠️  No results");
-  } else {
+  if (results.length > 0) {
     for (const r of results) {
-      console.log(
-        `    📄 [${r.category}] ${r.title} — ${r.code_examples.length} code blocks`
-      );
+      console.log(`    📄 [${r.category}] ${r.title} — ${r.code_examples.length} code blocks`);
       console.log(`       ${r.source_url}`);
     }
   }
+  check(results.length > 0, `"${test.query}" returned ${results.length} result(s)`, `"${test.query}" returned 0 results`);
 }
 
 console.log("\n" + "=".repeat(60));
-console.log("✅ All tests passed!");
 
+if (failCount > 0) {
+  console.error(`❌ ${failCount} check(s) failed`);
+  closeDatabase();
+  process.exit(1);
+}
+console.log("✅ All smoke tests passed!");
 closeDatabase();

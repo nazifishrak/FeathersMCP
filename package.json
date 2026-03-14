@@ -26,10 +26,12 @@
   "scripts": {
     "build": "tsc && chmod 755 build/index.js",
     "ingest": "tsx src/scripts/ingest.ts",
+    "drop": "tsx src/scripts/drop-tables.ts",
     "test:search": "tsx src/tests/test-search.ts",
     "test:pipeline": "tsx src/tests/full-pipeline-test.ts",
     "test:mcp": "tsx src/tests/test-mcp-protocol.ts",
     "test:css": "tsx src/tests/verify-css-fix.ts",
+    "test": "tsx src/tests/*.ts",
     "start": "node build/index.js"
   },
   "files": [
