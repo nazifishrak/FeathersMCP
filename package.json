@@ -31,7 +31,7 @@
     "test:pipeline": "tsx src/tests/full-pipeline-test.ts",
     "test:mcp": "tsx src/tests/test-mcp-protocol.ts",
     "test:css": "tsx src/tests/verify-css-fix.ts",
-    "test": "tsx --test --test-concurrency=1 'src/tests/*.ts'",
+    "test": "tsx --test --test-concurrency=1 src/tests/*.ts",
     "start": "node build/index.js"
   },
   "files": [
