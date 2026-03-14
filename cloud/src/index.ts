@@ -15,7 +15,15 @@ export default {
 			try {
 				// We use FTS5 MATCH for ultra-fast, ranked searching
 				const { results } = await env.DB.prepare(
-					`SELECT id, title, slug, author, excerpt, tags, github_pr_url, created_at 
+					`SELECT 
+						contributions.id, 
+						contributions.title, 
+						contributions.slug, 
+						contributions.author, 
+						contributions.excerpt, 
+						contributions.tags, 
+						contributions.github_pr_url, 
+						contributions.created_at 
 					 FROM contributions_fts 
 					 JOIN contributions ON contributions.id = contributions_fts.rowid 
 					 WHERE contributions_fts MATCH ? 
