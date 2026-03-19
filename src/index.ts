@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { createRequire } from "module";
 import { tools } from "./tools/index.js";
+
+// Derive version from package.json so src/index.ts never falls out of sync with the published package
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json") as { version: string };
 
 // Create server instance
 const server = new McpServer({
   name: "FeathersJSMCP",
-  version: "1.0.0",
+  version,
 });
 
 // Register all tools

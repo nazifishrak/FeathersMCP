@@ -11,8 +11,8 @@ jobs:
     # 2. The person who closed it is a maintainer (OWNER, MEMBER, or COLLABORATOR)
     if: |
       contains(github.event.issue.labels.*.name, 'community-contribution') &&
-      (github.event.issue.author_association == 'OWNER' || 
-       github.event.issue.author_association == 'MEMBER' || 
+      (github.event.issue.author_association == 'OWNER' ||
+       github.event.issue.author_association == 'MEMBER' ||
        github.event.issue.author_association == 'COLLABORATOR')
     runs-on: ubuntu-latest
     steps:
@@ -22,7 +22,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Ingest to Cloudflare
         shell: node {0}
@@ -33,13 +33,22 @@ jobs:
           ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
           async function run() {
+            // Validate required environment variables
+            const workerUrl = process.env.CLOUDFLARE_WORKER_URL;
+            if (!workerUrl || !workerUrl.trim()) {
+              throw new Error(
+                'CLOUDFLARE_WORKER_URL is not set or is empty. ' +
+                'Please configure the CLOUDFLARE_WORKER_URL GitHub secret for this workflow.'
+              );
+            }
+
             const body = process.env.ISSUE_BODY;
-            
+
             // Manual Regex-based Parsing of Frontmatter (No 'gray-matter' dependency needed!)
             const titleMatch = body.match(/title:\s*["'](.+?)["']/);
             const authorMatch = body.match(/author:\s*["'](.+?)["']/);
             const tagsMatch = body.match(/tags:\s*(\[.+?\])/);
-            
+
             // Extract the main content (everything after the second '---')
             const contentParts = body.split('---');
             const content = contentParts.length > 2 ? contentParts.slice(2).join('---').trim() : body;
@@ -68,12 +77,12 @@ jobs:
               content: content,
               excerpt: content.substring(0, 200).trim() + '...',
               tags: tags,
-              pr_url: process.env.ISSUE_URL
+              issue_url: process.env.ISSUE_URL
             };
 
             console.log(`Ingesting Community Post: ${payload.title}`);
 
-            const response = await fetch(`${process.env.CLOUDFLARE_WORKER_URL}/ingest`, {
+            const response = await fetch(`${workerUrl}/ingest`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

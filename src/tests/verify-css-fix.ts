@@ -1,6 +1,8 @@
 /**
  * Verify that CSS noise has been removed from all documents.
  * This script checks content_plain for Shiki CSS artifacts.
+ *
+ * Exits with code 1 if any check fails.
  */
 import path from "path";
 import fs from "fs";
@@ -19,6 +21,8 @@ const dbPath = fs.existsSync(dataPath)
 console.log("Database:", dbPath);
 const db = new Database(dbPath, { readonly: true });
 
+let failCount = 0;
+
 // Test 1: Check for CSS noise in content_plain
 const totalDocs = db.prepare("SELECT COUNT(*) as cnt FROM documents").get() as any;
 const cssCount = db.prepare("SELECT COUNT(*) as cnt FROM documents WHERE content_plain LIKE '%html pre.shiki%'").get() as any;
@@ -33,6 +37,7 @@ if (cssCount.cnt === 0 && styleCount.cnt === 0) {
   console.log("✅ No CSS noise found in any document!");
 } else {
   console.log("❌ CSS noise still present in some documents");
+  failCount++;
 }
 
 // Test 2: Authentication page (was the worst offender at 58% CSS)
@@ -40,7 +45,12 @@ const auth = db.prepare("SELECT title, LENGTH(content_plain) as len FROM documen
 console.log("\n=== Authentication Page (Worst Case) ===");
 console.log("Content length:", auth?.len, "chars");
 console.log("(Was 1311 chars with CSS, should be ~546 now)");
-console.log(auth?.len <= 600 ? "✅ Correct size range" : "⚠️  Larger than expected");
+if (auth?.len <= 600) {
+  console.log("✅ Correct size range");
+} else {
+  console.log("❌ Larger than expected — possible CSS noise regression");
+  failCount++;
+}
 
 // Test 3: Check a content sample
 const sample = db.prepare("SELECT SUBSTR(content_plain, 1, 200) as snippet FROM documents WHERE title = 'Authentication' AND category = 'api'").get() as any;
@@ -86,8 +96,18 @@ for (const doc of allDocs) {
 }
 console.log(`  ${validJson} docs with valid code_examples arrays`);
 console.log(`  ${invalidJson} docs with invalid code_examples`);
-console.log(invalidJson === 0 ? "✅ All code_examples are valid JSON" : "❌ Some code_examples are invalid");
+if (invalidJson === 0) {
+  console.log("✅ All code_examples are valid JSON");
+} else {
+  console.log("❌ Some code_examples are invalid JSON");
+  failCount++;
+}
 
 db.close();
 console.log("\n============================================================");
-console.log("All verification checks complete!");
+
+if (failCount > 0) {
+  console.log(`❌ ${failCount} check(s) failed`);
+  process.exitCode = 1;
+}
+console.log("✅ All verification checks passed!");

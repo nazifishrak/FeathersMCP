@@ -2,16 +2,17 @@
 
 ## Pipeline Link
 
-**GitHub Actions:** <https://github.com/nazifishrak/FeatherMCP/actions>
+**GitHub Actions:** <https://github.com/nazifishrak/FeathersMCP/actions>
 
 | Workflow | File | Runs on |
 |---|---|---|
 | Build & Test | `.github/workflows/build-and-test.yml` | Every push to `main` and all pull requests |
 | Release | `.github/workflows/release.yml` | Every push to `main` (after merge) |
+| Community Ingestion | `.github/workflows/ingest-to-cloudflare.yml` | Every closed issue with `community-contribution` label |
 
 ## High-Level Description
 
-The Feathers MCP CI/CD pipeline is split into two GitHub Actions workflows:
+The Feathers MCP CI/CD pipeline is split into three GitHub Actions workflows:
 
 ### 1. Build & Test (`build-and-test.yml`)
 
@@ -65,19 +66,33 @@ Runs only on push to `main` (i.e., after a PR is merged). This workflow has thre
 2. **Setup Node.js 20** with npm registry URL configured.
 3. **Publish to npm** — publishes the package as `feathersjs-mcp` to the npm registry using `NPM_TOKEN`.
 
+### 3. Community Ingestion (`ingest-to-cloudflare.yml`)
+
+Runs whenever a GitHub Issue is **closed**, provided it has the `community-contribution` label and was closed by a repository maintainer (Owner, Member, or Collaborator).
+
+**Steps:**
+
+1. **Checkout** the repository.
+2. **Setup Node.js 20**.
+3. **Parse Issue Body** — extracts frontmatter (title, author, tags) and Markdown content using a zero-dependency regex parser.
+4. **Validate** — ensures required fields like `title` are present.
+5. **Ingest to Cloudflare** — sends a secure `POST` request to the Cloudflare Worker API.
+   - Uses `CLOUDFLARE_WORKER_URL` and `INGESTION_SECRET` from GitHub Secrets.
+   - The Worker then inserts the data into the **Cloudflare D1 (SQL)** database and updates the **FTS5 Search Index**.
+
 ## Pipeline Flow
 
 ```
-  Push to main / Open PR
-         │
-         ▼
-  ┌──────────────────────┐
-  │   Build & Test       │
-  │                      │
-  │  npm ci              │
-  │  npm run build       │
-  │  npm run test:pipeline│
-  │  npm run test:mcp    │
+  Push to main / Open PR          Issue Closed (with Label)
+         │                                │
+         ▼                                ▼
+  ┌──────────────────────┐      ┌──────────────────────────┐
+  │   Build & Test       │      │   Community Ingestion    │
+  │                      │      │                          │
+  │  npm ci              │      │  Parse Frontmatter       │
+  │  npm run build       │      │  Regex Body Extract      │
+  │  npm run test:pipeline│      │  Post to Cloudflare D1   │
+  │  npm run test:mcp    │      └──────────────────────────┘
   └──────────┬───────────┘
              │ pass (on push to main only)
              ▼
