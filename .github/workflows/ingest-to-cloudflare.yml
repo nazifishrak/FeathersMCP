@@ -59,7 +59,11 @@ jobs:
             }
 
             const title = titleMatch[1];
+            const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
             const author = authorMatch ? authorMatch[1] : 'unknown';
+            const excerpt = content.substring(0, 200).trim() + '...';
+            const issue_url = process.env.ISSUE_URL;
+
             let tags = '';
             try {
               if (tagsMatch) {
@@ -70,18 +74,19 @@ jobs:
               console.error('Failed to parse tags:', e);
             }
 
-            const payload = {
-              title: title,
-              slug: title.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, ''),
-              author: author,
-              content: content,
-              excerpt: content.substring(0, 200).trim() + '...',
-              tags: tags,
-              issue_url: process.env.ISSUE_URL
-            };
+            const payload = { title, slug, author, content, excerpt, tags, issue_url };
 
             console.log(`Ingesting Community Post: ${payload.title}`);
-            console.log({ title, slug, author, contentLen: content?.length, excerptLen: excerpt?.length, tags, issue_url });
+            console.log({ 
+              title, 
+              slug, 
+              author, 
+              contentLen: content?.length, 
+              excerptLen: excerpt?.length, 
+              tags, 
+              issue_url 
+            });
+
             const response = await fetch(`${workerUrl}/ingest`, {
               method: 'POST',
               headers: {
