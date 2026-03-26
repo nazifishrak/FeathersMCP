@@ -81,7 +81,7 @@ jobs:
             };
 
             console.log(`Ingesting Community Post: ${payload.title}`);
-
+            console.log({ title, slug, author, contentLen: content?.length, excerptLen: excerpt?.length, tags, issue_url });
             const response = await fetch(`${workerUrl}/ingest`, {
               method: 'POST',
               headers: {
