@@ -6,7 +6,7 @@ This document defines an internal test plan to verify that FeathersMCP works rel
 
 We are not focusing on screen-reader or keyboard-only UI behavior in this plan.
 
-We are testing whether FeathesMCP:
+We are testing whether FeathersMCP:
 1. Calls the right tools at the right time.
 2. Retrieves correct FeathersJS documentation for implementation and learning tasks.
 3. Handles non-existent or unsupported FeathersJS requests safely and clearly.
