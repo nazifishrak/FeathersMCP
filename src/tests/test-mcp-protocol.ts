@@ -96,7 +96,7 @@ async function main() {
   // Send initialized notification
   proc.stdin!.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
 
-  // Test 2: List tools — expect 6 (get-schema, get-menu, search-doc, get-doc, share-knowledge, search-community)
+  // Test 2: List tools — expect 7 (get-schema, get-menu, search-doc, get-doc, share-knowledge, search-community, get-community-post)
   console.log("\n── Test 2: tools/list ──");
   const toolsRes = await sendRequest(2, "tools/list", {});
   const tools = toolsRes.result?.tools || [];
@@ -106,7 +106,7 @@ async function main() {
     const params = Object.keys(tool.inputSchema?.properties || {});
     console.log(`      Parameters: ${params.length > 0 ? params.join(", ") : "(none)"}`);
   }
-  check(tools.length === 6, "All 6 tools registered", `Expected 6 tools, got ${tools.length}`);
+  check(tools.length === 7, "All 7 tools registered", `Expected 7 tools, got ${tools.length}`);
   const toolNames = tools.map((t: any) => t.name);
   check(
     toolNames.includes("share-knowledge") && toolNames.includes("search-community"),
