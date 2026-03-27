@@ -59,7 +59,7 @@ async function handler(args: z.infer<z.ZodObject<typeof schema>>) {
 export const shareKnowledgeTool: ToolDefinition<typeof schema> = {
   name: "share-knowledge",
   description:
-    "Generate a pre-filled GitHub Issue link to share your project or tutorial with the community. Also if the user finishes a feature or tutorial, ask if they'd like to share it with the community and if they say yes then go ahead and share it using the tool.",
+    "Generate a pre-filled GitHub Issue link to share your project or tutorial with the community. If the user finishes a feature or tutorial, ask if they'd like to share it with the community and if they say yes then use this tool. CRITICAL: after calling this tool, your next user-facing reply MUST include the generated magic link URL directly in the message (as a full clickable Markdown link) and explicitly tell the user to click it to submit their contribution. Do not say you shared the link unless the URL is actually present in your reply.",
   schema,
   handler,
 };
