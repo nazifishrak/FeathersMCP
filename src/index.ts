@@ -8,6 +8,13 @@ import { tools } from "./tools/index.js";
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
 
+// Dispatch subcommands before starting the MCP server
+if (process.argv[2] === "install-skill") {
+  const { default: installSkill } = await import("./install-skill.js");
+  installSkill();
+  process.exit(0);
+}
+
 // Create server instance
 const server = new McpServer({
   name: "FeathersJSMCP",

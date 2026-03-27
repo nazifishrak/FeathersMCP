@@ -129,7 +129,24 @@ You should see the AI call `search-doc` or `get-menu` before answering.
 | `spawn npx ENOENT` on macOS | Open your IDE from the terminal: `cursor .` or `code .` so it inherits your shell PATH |
 | Server shows as Stopped | Click it and select Start Server; if that fails, verify `npx` is on your PATH |
 | Tools not appearing in Copilot/Cursor chat | Make sure you're in **Agent** mode, not Ask or Edit mode |
-| Want a locked version | Run `npm install feathersjs-mcp`, then set `"command": "node"` and `"args": ["node_modules/feathersjs-mcp/build/index.js"]` in your config (use full path from `which node` on macOS if needed, e.g. `"/opt/homebrew/bin/node"`) |
+| Want a locked version | See **Locked version config** below |
+
+#### Locked version config
+
+Run `npm install feathersjs-mcp` first, then use this exact config — `command` must be `node`, the path goes in `args`:
+
+```json
+{
+  "mcpServers": {
+    "feathersjs": {
+      "command": "node",
+      "args": ["node_modules/feathersjs-mcp/build/index.js"]
+    }
+  }
+}
+```
+
+On macOS, if `node` is not on your PATH, replace `"node"` with the full path from `which node` (e.g. `"/opt/homebrew/bin/node"`). Do **not** put the `.js` path as the `command` — it must go in `args`.
 
 ---
 
