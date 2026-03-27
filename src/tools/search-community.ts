@@ -10,7 +10,7 @@ async function handler({ query }: { query: string }) {
 
   try {
     const response = await fetch(`${WORKER_URL}/search?q=${encodeURIComponent(query)}`);
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       return {
@@ -39,7 +39,7 @@ async function handler({ query }: { query: string }) {
     const formattedResults = results.map(r => (
       `### ${r.title}\n` +
       `**Author:** @${r.author} | **Tags:** ${r.tags}\n` +
-      `**Excerpt:** ${r.excerpt}\n` +
+      `**Content:** ${r.content}\n` +
       `[Link to Issue](${r.github_issue_url})\n`
     )).join("\n---\n\n");
 
