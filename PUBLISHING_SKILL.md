@@ -1,6 +1,6 @@
 # Publishing the feathersjs-mcp Skill
 
-This document is for FeatherMCP maintainers. It covers what to commit, how to publish, and how to keep the skill in sync with the server.
+This document is for FeathersMCP maintainers. It covers what to commit, how to publish, and how to keep the skill in sync with the server.
 
 ---
 

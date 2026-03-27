@@ -113,7 +113,7 @@ Expected outcomes:
 - Distinguishes community contributions from official docs context.
 
 Pass/fail checks:
-- Response contains title, author, tags, excerpt, and issue link when results exist.
+- Response contains title, author, tags, content preview, and issue link when results exist.
 - No crash/unhandled error text for common misses.
 
 ### E. Setup and First-Run Usability

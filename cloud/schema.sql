@@ -2,10 +2,8 @@
 CREATE TABLE IF NOT EXISTS contributions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
-    slug TEXT UNIQUE NOT NULL,
     author TEXT NOT NULL,
     content TEXT NOT NULL,
-    excerpt TEXT,
     tags TEXT,
     github_issue_url TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

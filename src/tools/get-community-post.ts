@@ -6,19 +6,8 @@ const schema = {
     .number()
     .int()
     .positive()
-    .optional()
-    .describe("The community post ID from search-community results. Preferred lookup key."),
-  slug: z
-    .string()
-    .optional()
-    .describe("The community post slug from search-community results. Fallback lookup key."),
+    .describe("The community post ID from search-community results."),
 };
-
-const validationSchema = z
-  .object(schema)
-  .refine((data) => data.id !== undefined || (data.slug && data.slug.trim().length > 0), {
-    message: "Provide at least one of: id, slug",
-  });
 
 function toSafeString(value: unknown): string {
   if (typeof value === "string") return value.trim();
@@ -26,14 +15,14 @@ function toSafeString(value: unknown): string {
   return String(value).trim();
 }
 
-async function handler({ id, slug }: { id?: number; slug?: string }) {
-  const validation = validationSchema.safeParse({ id, slug });
-  if (!validation.success) {
+async function handler({ id }: { id: number }) {
+  const parsed = schema.id.safeParse(id);
+  if (!parsed.success) {
     return {
       content: [
         {
           type: "text" as const,
-          text: `Error: ${validation.error.issues[0]?.message || "Invalid input"}`,
+          text: `Error: ${parsed.error.issues[0]?.message || "Invalid id"}`,
         },
       ],
     };
@@ -41,11 +30,7 @@ async function handler({ id, slug }: { id?: number; slug?: string }) {
 
   const WORKER_URL = "https://feathermcp-api.nzfishrak60.workers.dev";
   const params = new URLSearchParams();
-  if (id !== undefined) {
-    params.set("id", String(id));
-  } else if (slug) {
-    params.set("slug", toSafeString(slug));
-  }
+  params.set("id", String(parsed.data));
 
   try {
     const response = await fetch(`${WORKER_URL}/community-post?${params.toString()}`);
@@ -64,7 +49,6 @@ async function handler({ id, slug }: { id?: number; slug?: string }) {
     const post = (await response.json()) as {
       id: number;
       title: string;
-      slug: string;
       author: string;
       content: string;
       tags: string;
@@ -79,7 +63,6 @@ async function handler({ id, slug }: { id?: number; slug?: string }) {
             {
               id: post.id,
               title: post.title,
-              slug: post.slug,
               author: post.author,
               tags: post.tags,
               content: post.content,
@@ -106,7 +89,7 @@ async function handler({ id, slug }: { id?: number; slug?: string }) {
 export const getCommunityPostTool: ToolDefinition<typeof schema> = {
   name: "get-community-post",
   description:
-    "Fetch the full content of a community contribution by id (preferred) or slug (fallback), usually after using search-community.",
+    "Fetch the full content of a community contribution by id (from search-community results).",
   schema,
   handler,
 };

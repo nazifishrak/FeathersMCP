@@ -11,15 +11,6 @@ function toSafeString(value: unknown): string {
   return String(value).trim();
 }
 
-function isValidHttpUrl(value: string): boolean {
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
 async function handler({ query }: { query: string }) {
   const WORKER_URL = "https://feathermcp-api.nzfishrak60.workers.dev";
 
@@ -54,19 +45,16 @@ async function handler({ query }: { query: string }) {
     const formattedResults = results
       .map((r, index) => {
         const id = r.id;
-        const slug = toSafeString(r.slug);
         const title = toSafeString(r.title) || "Untitled contribution";
         const author = toSafeString(r.author) || "unknown";
         const tags = toSafeString(r.tags) || "none";
         const content = toSafeString(r.content) || "No content available.";
         const issueUrl = toSafeString(r.github_issue_url);
-        const issueLinkLine = isValidHttpUrl(issueUrl)
-          ? `[Link to Issue](${issueUrl})`
-          : "Issue link unavailable";
+        const issueLinkLine = issueUrl ? `[Link to Issue](${issueUrl})` : "Issue link unavailable";
 
         return (
           `### ${index + 1}. ${title}\n` +
-          `**ID:** ${id} | **Slug:** ${slug || "n/a"}\n` +
+          `**ID:** ${id}\n` +
           `**Author:** @${author} | **Tags:** ${tags}\n` +
           `**Content:** ${content}\n` +
           `${issueLinkLine}\n`
@@ -97,7 +85,7 @@ async function handler({ query }: { query: string }) {
 export const searchCommunityTool: ToolDefinition<typeof schema> = {
   name: "search-community",
   description:
-    "Search the FeathersJS community knowledge base for tutorials, projects, and insights other users shared (integrations, edge cases, combinations). You may use this before or after official doc tools—no fixed order. Returns id and slug per hit; use get-community-post for full post text.",
+    "Search the FeathersJS community knowledge base for tutorials, projects, and insights other users shared (integrations, edge cases, combinations). You may use this before or after official doc tools—no fixed order. Returns id per hit; use get-community-post with that id for full post text.",
   schema,
   handler,
 };
