@@ -99,6 +99,7 @@ Replace `/opt/homebrew/bin/node` with the output of `which node` on your machine
 
 - **npm:** https://www.npmjs.com/package/feathersjs-mcp
 - **GitHub:** https://github.com/nazifishrak/FeathersMCP
+- **Internal Testing Plan:** [ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md)
 
 ## Available Tools
 
