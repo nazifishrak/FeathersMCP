@@ -16,6 +16,13 @@ const GLOBAL_INSTRUCTION = `
 - After \`share-knowledge\` returns, your next response MUST include the actual magic link URL in a clickable Markdown link so the user can open it directly from chat. Never omit the URL and never require the user to read tool output manually.
 `;
 
+// Dispatch subcommands before starting the MCP server
+if (process.argv[2] === "install-skill") {
+  const { default: installSkill } = await import("./install-skill.js");
+  installSkill();
+  process.exit(0);
+}
+
 // Create server instance
 const server = new McpServer(
   {
