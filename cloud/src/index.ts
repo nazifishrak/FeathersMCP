@@ -33,6 +33,7 @@ export default {
 						contributions.title,
 						contributions.slug,
 						contributions.author,
+						contributions.content,
 						contributions.excerpt,
 						contributions.tags,
 						contributions.github_issue_url,
@@ -63,7 +64,7 @@ export default {
 				const { title, slug, author, content, excerpt, tags, issue_url } = body;
 
 				await env.DB.prepare(
-					`INSERT INTO contributions (title, slug, author, content, excerpt, tags, github_issue_url) 
+					`INSERT INTO contributions (title, slug, author, content, excerpt, tags, github_issue_url)
 					 VALUES (?, ?, ?, ?, ?, ?, ?)`
 				).bind(title, slug, author, content, excerpt, tags, issue_url).run();
 
