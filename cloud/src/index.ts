@@ -13,22 +13,35 @@ export default {
 			if (!query) return new Response('Missing query', { status: 400 });
 
 			try {
+				// Sanitize query before passing to FTS5 MATCH.
+				// FTS5 interprets "col:term" as a column-scoped search, so raw agent
+				// queries containing colons (e.g. "real-time:chat") cause
+				// "no such column" errors. Quoting each token prevents this.
+				const ftsQuery = query
+					.split(/\s+/)
+					.map(token => token.replace(/"/g, ''))   // strip any embedded quotes
+					.filter(Boolean)
+					.map(token => `"${token}"`)              // quote each token → phrase match
+					.join(' ');
+
+				if (!ftsQuery) return new Response('Missing query', { status: 400 });
+
 				// We use FTS5 MATCH for ultra-fast, ranked searching
 				const { results } = await env.DB.prepare(
-					`SELECT 
-						contributions.id, 
-						contributions.title, 
-						contributions.slug, 
-						contributions.author, 
-						contributions.excerpt, 
-						contributions.tags, 
-						contributions.github_issue_url, 
-						contributions.created_at 
-					 FROM contributions_fts 
-					 JOIN contributions ON contributions.id = contributions_fts.rowid 
-					 WHERE contributions_fts MATCH ? 
-					 ORDER BY rank LIMIT 10`
-				).bind(query).all();
+					`SELECT
+						contributions.id,
+						contributions.title,
+						contributions.slug,
+						contributions.author,
+						contributions.excerpt,
+						contributions.tags,
+						contributions.github_issue_url,
+						contributions.created_at
+					 FROM contributions_fts
+					 JOIN contributions ON contributions.id = contributions_fts.rowid
+					 WHERE contributions_fts MATCH ?
+					 ORDER BY bm25(contributions_fts, 10.0, 1.0, 3.0) LIMIT 10`
+				).bind(ftsQuery).all();
 
 				return Response.json(results);
 			} catch (e: any) {
