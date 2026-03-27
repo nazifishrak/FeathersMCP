@@ -8,9 +8,11 @@ jobs:
   ingest:
     # ONLY RUN IF:
     # 1. The issue has the 'community-contribution' label
-    # 2. The person who closed it is a maintainer (OWNER, MEMBER, or COLLABORATOR)
+    # 2. The issue has the 'approved-post' label
+    # 3. The person who closed it is a maintainer (OWNER, MEMBER, or COLLABORATOR)
     if: |
       contains(github.event.issue.labels.*.name, 'community-contribution') &&
+      contains(github.event.issue.labels.*.name, 'approved-post') &&
       (github.event.issue.author_association == 'OWNER' ||
        github.event.issue.author_association == 'MEMBER' ||
        github.event.issue.author_association == 'COLLABORATOR')
@@ -30,10 +32,11 @@ jobs:
           CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
           INGESTION_SECRET: ${{ secrets.INGESTION_SECRET }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
           async function run() {
-            // Validate required environment variables
+            // Input and secrets: validate required runtime configuration from workflow env.
             const workerUrl = process.env.CLOUDFLARE_WORKER_URL;
             if (!workerUrl || !workerUrl.trim()) {
               throw new Error(
@@ -41,66 +44,190 @@ jobs:
                 'Please configure the CLOUDFLARE_WORKER_URL GitHub secret for this workflow.'
               );
             }
-
-            const body = process.env.ISSUE_BODY;
-
-            // Manual Regex-based Parsing of Frontmatter (No 'gray-matter' dependency needed!)
-            const titleMatch = body.match(/title:\s*["'](.+?)["']/);
-            const authorMatch = body.match(/author:\s*["'](.+?)["']/);
-            const tagsMatch = body.match(/tags:\s*(\[.+?\])/);
-
-            // Extract the main content (everything after the second '---')
-            const contentParts = body.split('---');
-            const content = contentParts.length > 2 ? contentParts.slice(2).join('---').trim() : body;
-
-            if (!titleMatch) {
-              console.log('Skipping ingestion: Could not find title in issue body frontmatter.');
-              return;
+            const ingestionSecret = process.env.INGESTION_SECRET;
+            if (!ingestionSecret || !ingestionSecret.trim()) {
+              throw new Error(
+                'INGESTION_SECRET is not set or is empty. ' +
+                'Please configure the INGESTION_SECRET GitHub secret for this workflow.'
+              );
             }
 
-            const title = titleMatch[1];
-            const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-            const author = authorMatch ? authorMatch[1] : 'unknown';
-            const excerpt = content.substring(0, 200).trim() + '...';
-            const issue_url = process.env.ISSUE_URL;
+            const issueBody = typeof process.env.ISSUE_BODY === 'string' ? process.env.ISSUE_BODY : '';
+            const issueTitle = typeof process.env.ISSUE_TITLE === 'string' ? process.env.ISSUE_TITLE : '';
+            const issueUrl = typeof process.env.ISSUE_URL === 'string' ? process.env.ISSUE_URL : '';
 
-            let tags = '';
-            try {
-              if (tagsMatch) {
-                const tagsArray = JSON.parse(tagsMatch[1]);
-                tags = Array.isArray(tagsArray) ? tagsArray.join(',') : tagsArray;
+            // Helpers: shared string cleanup and parsing utilities used below.
+            const toSafeString = (value) => {
+              if (typeof value === 'string') return value.trim();
+              if (value === null || value === undefined) return '';
+              return String(value).trim();
+            };
+
+            const stripSurroundingQuotes = (value) => value.replace(/^["']|["']$/g, '').trim();
+            const stripCommunityPrefix = (value) => toSafeString(value).replace(/^\[community\]\s*/i, '').trim();
+
+            const extractFrontmatterAndContent = (bodyText) => {
+              const text = toSafeString(bodyText);
+              // Match frontmatter only when it appears at the top.
+              const frontmatterMatch = text.match(/^\s*---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n?([\s\S]*)$/);
+              if (!frontmatterMatch) {
+                return { frontmatter: '', content: text };
               }
-            } catch (e) {
-              console.error('Failed to parse tags:', e);
+              return {
+                frontmatter: frontmatterMatch[1] || '',
+                content: (frontmatterMatch[2] || '').trim()
+              };
+            };
+
+            const parseField = (text, key) => {
+              const match = toSafeString(text).match(new RegExp(`^\\s*${key}\\s*:\\s*(.+)\\s*$`, 'mi'));
+              if (!match || !match[1]) return '';
+              return stripSurroundingQuotes(match[1]);
+            };
+
+            const parseTags = (rawTags) => {
+              const tagText = toSafeString(rawTags);
+              if (!tagText) return '';
+
+              if (tagText.startsWith('[') && tagText.endsWith(']')) {
+                try {
+                  const parsed = JSON.parse(tagText);
+                  if (Array.isArray(parsed)) {
+                    return parsed.map((tag) => toSafeString(tag)).filter(Boolean).join(',');
+                  }
+                  return toSafeString(parsed);
+                } catch (error) {
+                  // Fallback to comma split below.
+                }
+              }
+
+              const normalized = tagText
+                .replace(/^\[/, '')
+                .replace(/\]$/, '')
+                .split(',')
+                .map((tag) => stripSurroundingQuotes(toSafeString(tag)))
+                .filter(Boolean)
+                .join(',');
+              return normalized;
+            };
+
+            const makeSlug = (titleText) => {
+              const slug = toSafeString(titleText)
+                .toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '');
+              return slug || `post-${Date.now()}`;
+            };
+
+            // Parsing: extract raw title/author/tags from frontmatter or issue body.
+            const { frontmatter, content: frontmatterContent } = extractFrontmatterAndContent(issueBody);
+            const parseSource = frontmatter || issueBody;
+
+            const parsedTitle = parseField(parseSource, 'title');
+            const parsedAuthor = parseField(parseSource, 'author');
+            const parsedTags = parseField(parseSource, 'tags');
+
+            // Normalization: build canonical payload values with safe fallbacks.
+            const contentCandidate = toSafeString(frontmatterContent || issueBody);
+            const normalizedContent = contentCandidate || 'No content provided.';
+            const normalizedTitle = toSafeString(parsedTitle) || stripCommunityPrefix(issueTitle) || 'Untitled Community Post';
+            const normalizedAuthor = toSafeString(parsedAuthor) || 'unknown';
+            const normalizedTags = parseTags(parsedTags);
+            const normalizedIssueUrl = toSafeString(issueUrl);
+            const slug = makeSlug(normalizedTitle);
+            const excerptBase = normalizedContent.slice(0, 200).trim();
+            const excerpt = normalizedContent.length > 200 ? `${excerptBase}...` : excerptBase;
+
+            const safePayload = {
+              title: normalizedTitle,
+              slug,
+              author: normalizedAuthor,
+              content: normalizedContent,
+              excerpt: excerpt || 'No excerpt available.',
+              tags: normalizedTags,
+              issue_url: normalizedIssueUrl
+            };
+
+            // Outbound contract guard: ensure all payload fields are present and strings.
+            for (const [key, value] of Object.entries(safePayload)) {
+              if (value === undefined) {
+                throw new Error(`Payload preflight failed: "${key}" is undefined.`);
+              }
+              if (typeof value !== 'string') {
+                throw new Error(`Payload preflight failed: "${key}" must be a string.`);
+              }
             }
 
-            const payload = { title, slug, author, content, excerpt, tags, issue_url };
-
-            console.log(`Ingesting Community Post: ${payload.title}`);
-            console.log({ 
-              title, 
-              slug, 
-              author, 
-              contentLen: content?.length, 
-              excerptLen: excerpt?.length, 
-              tags, 
-              issue_url 
-            });
-
-            const response = await fetch(`${workerUrl}/ingest`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.INGESTION_SECRET}`
+            console.log(`Ingesting Community Post: ${safePayload.title}`);
+            console.log({
+              title: safePayload.title,
+              slug: safePayload.slug,
+              author: safePayload.author,
+              contentLen: safePayload.content.length,
+              excerptLen: safePayload.excerpt.length,
+              tags: safePayload.tags,
+              issue_url_present: Boolean(safePayload.issue_url),
+              usedFallbacks: {
+                titleFromIssueTitle: !toSafeString(parsedTitle) && Boolean(toSafeString(issueTitle)),
+                defaultTitle: !toSafeString(parsedTitle) && !toSafeString(issueTitle),
+                defaultAuthor: !toSafeString(parsedAuthor),
+                defaultContent: !toSafeString(frontmatterContent || issueBody),
+                defaultSlug: safePayload.slug.startsWith('post-')
               },
-              body: JSON.stringify(payload)
+              parseSignals: {
+                frontmatterDetected: Boolean(frontmatter),
+                parseSource: frontmatter ? 'frontmatter' : 'body-fallback',
+                legacyMalformedInput:
+                  (!frontmatter && Boolean(issueBody)) ||
+                  !toSafeString(parsedTitle) ||
+                  !toSafeString(parsedAuthor)
+              }
             });
 
-            if (!response.ok) {
-              const error = await response.text();
-              throw new Error(`Cloudflare Ingestion failed: ${error}`);
+            // Network request: POST to Worker /ingest with timeout to avoid hanging CI.
+            const controller = new AbortController();
+            const timeoutMs = 15000;
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+            let response;
+            try {
+              response = await fetch(`${workerUrl}/ingest`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${ingestionSecret}`
+                },
+                body: JSON.stringify(safePayload),
+                signal: controller.signal
+              });
+            } catch (error) {
+              if (error && error.name === 'AbortError') {
+                throw new Error(`Cloudflare ingestion request timed out after ${timeoutMs}ms.`);
+              }
+              throw new Error(`Cloudflare ingestion request failed: ${error && error.message ? error.message : String(error)}`);
+            } finally {
+              clearTimeout(timeout);
             }
-            console.log(`Successfully ingested post from Issue: ${payload.title}`);
+
+            // Response and error handling: decode JSON errors for actionable CI logs.
+            if (!response.ok) {
+              const errorText = await response.text();
+              let errorCode = '';
+              let errorDetail = errorText || 'No response body';
+              try {
+                const parsedError = JSON.parse(errorText || '{}');
+                if (parsedError && typeof parsedError === 'object') {
+                  errorCode = typeof parsedError.code === 'string' ? parsedError.code : '';
+                  errorDetail = typeof parsedError.error === 'string' ? parsedError.error : errorDetail;
+                }
+              } catch (_) {
+                // Keep plain-text fallback.
+              }
+              const codeSegment = errorCode ? ` code=${errorCode}` : '';
+              throw new Error(`Cloudflare ingestion failed (status ${response.status}${codeSegment}): ${errorDetail}`);
+            }
+            console.log(`Successfully ingested post from Issue: ${safePayload.title}`);
           }
 
           run().catch(err => {
