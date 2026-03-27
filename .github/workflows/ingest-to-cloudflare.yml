@@ -8,9 +8,11 @@ jobs:
   ingest:
     # ONLY RUN IF:
     # 1. The issue has the 'community-contribution' label
-    # 2. The person who closed it is a maintainer (OWNER, MEMBER, or COLLABORATOR)
+    # 2. The issue has the 'approved-post' label
+    # 3. The person who closed it is a maintainer (OWNER, MEMBER, or COLLABORATOR)
     if: |
       contains(github.event.issue.labels.*.name, 'community-contribution') &&
+      contains(github.event.issue.labels.*.name, 'approved-post') &&
       (github.event.issue.author_association == 'OWNER' ||
        github.event.issue.author_association == 'MEMBER' ||
        github.event.issue.author_association == 'COLLABORATOR')

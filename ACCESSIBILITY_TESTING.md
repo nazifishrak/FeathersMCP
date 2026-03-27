@@ -141,7 +141,7 @@ Goal: verify contribution ingestion works end-to-end after issue closure.
 
 Test flow:
 1. Use `share-knowledge` flow to generate and submit issue.
-2. Confirm issue has `community-contribution` label and parseable body.
+2. Confirm issue has both labels: `community-contribution` and `approved-post`, plus parseable body.
 3. Close issue (or use controlled test issue lifecycle).
 4. Verify GitHub workflow `.github/workflows/ingest-to-cloudflare.yml` executes successfully.
 5. Verify post appears through `search-community` query.
@@ -152,6 +152,7 @@ Expected outcomes:
 - Entry is searchable with expected tags/author/title.
 
 Pass/fail checks:
+- Workflow does not run if `approved-post` label is missing.
 - Workflow run success (no secret/auth/frontmatter parsing failure).
 - Searchable entry appears within expected delay window.
 
