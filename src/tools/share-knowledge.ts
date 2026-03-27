@@ -36,7 +36,7 @@ async function handler(args: z.infer<z.ZodObject<typeof schema>>) {
   ].join("\n");
 
   // 2. Construct the GitHub "New Issue" Magic Link
-  // We URI-encode everything to make it a valid URL
+  // labels= applies when GitHub allows; otherwise label-community-issue.yml adds the label on open.
   const baseUrl = `https://github.com/${repoOwner}/${repoName}/issues/new`;
   const params = new URLSearchParams({
     title: `[Community] ${title}`,
@@ -50,7 +50,7 @@ async function handler(args: z.infer<z.ZodObject<typeof schema>>) {
     content: [
       {
         type: "text" as const,
-        text: `I've drafted your community contribution! 🚀\n\nClick the link below to review and submit it to the repository. I've already pre-filled the title, content, and the required '${label}' label for you.\n\n[🔗 Submit to GitHub](${magicLink})\n\n**Note:** Once a maintainer reviews and closes your issue, it will be automatically published to the Community Knowledgebase.`,
+        text: `I've drafted your community contribution! 🚀\n\nClick the link below to review and submit it to the repository. Title and body are pre-filled. The **${label}** label is applied when GitHub accepts it from the link, or automatically after you submit via the repo workflow.\n\n[🔗 Submit to GitHub](${magicLink})\n\n**Note:** After a maintainer adds **approved-post** and **closes** the issue, the contribution is published to the Community Knowledgebase per repo workflow.`,
       },
     ],
   };

@@ -1,0 +1,29 @@
+# Applies community-contribution for issues opened via share-knowledge magic link.
+# GitHub ignores labels= in the new-issue URL for users without triage/write; this workflow adds the label with GITHUB_TOKEN.
+
+name: Label community contribution issues
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  add-label:
+    if: |
+      startsWith(github.event.issue.title, '[Community]') &&
+      contains(github.event.issue.body, '_Submitted via FeathersMCP Agent_') &&
+      contains(github.event.issue.body, 'title:') &&
+      contains(github.event.issue.body, 'author:') &&
+      contains(github.event.issue.body, 'tags:')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add community-contribution label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue edit "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --add-label "community-contribution"

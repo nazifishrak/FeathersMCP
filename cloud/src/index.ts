@@ -232,14 +232,41 @@ export default {
 					);
 				}
 
+				const issueUrlBound = toSafeString(payload.issue_url);
+				const titleB = toSafeString(payload.title);
+				const authorB = toSafeString(payload.author);
+				const contentB = toSafeString(payload.content);
+				const tagsB = toSafeString(payload.tags);
+
+				// Idempotency: same GitHub issue URL updates the existing row (re-label or close-after-label).
+				if (issueUrlBound && isValidGithubIssueUrl(issueUrlBound)) {
+					const existing = await env.DB.prepare(
+						`SELECT id FROM contributions WHERE github_issue_url = ? LIMIT 1`
+					)
+						.bind(issueUrlBound)
+						.first<{ id: number }>();
+
+					if (existing?.id != null) {
+						await env.DB.prepare(
+							`UPDATE contributions
+							 SET title = ?, author = ?, content = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
+							 WHERE id = ?`
+						)
+							.bind(titleB, authorB, contentB, tagsB, existing.id)
+							.run();
+						return Response.json(
+							{ ok: true, message: 'Content updated successfully' },
+							{ status: 200 }
+						);
+					}
+				}
+
 				const insert = env.DB.prepare(
 					`INSERT INTO contributions (title, author, content, tags, github_issue_url)
 					 VALUES (?, ?, ?, ?, ?)`
 				);
 
-				await insert
-					.bind(payload.title, payload.author, payload.content, payload.tags, payload.issue_url)
-					.run();
+				await insert.bind(titleB, authorB, contentB, tagsB, issueUrlBound).run();
 
 				return Response.json(
 					{ ok: true, message: 'Content ingested successfully' },
