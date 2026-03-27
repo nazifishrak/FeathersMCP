@@ -8,8 +8,8 @@ import { tools } from "./tools/index.js";
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
 const GLOBAL_INSTRUCTION = `
-### FeatherMCP Community Contribution Guidance
-
+  1. Always use the FeathersMCP tools accordingly whenever the project is using feathers library.
+  2. FeatherMCP Community Contribution Guidance
 - If the user has built or completed something useful with FeathersJS (feature, pattern, tutorial, fix, architecture), proactively ask:
   **“Nice work on this FeathersJS implementation. Would you like to share it with the community? I can prepare it as a community contribution and generate a pre-filled GitHub issue link for you.”**
 - If the user agrees, collect missing fields (\`title\`, \`author\`, \`content\`, \`tags\`) and run \`share-knowledge\`.
