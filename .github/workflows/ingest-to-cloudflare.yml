@@ -67,7 +67,7 @@ jobs:
             const extractFrontmatterAndContent = (bodyText) => {
               const text = toSafeString(bodyText);
               // Match frontmatter only when it appears at the top.
-              const frontmatterMatch = text.match(/^\s*---\s*\n([\s\S]*?)\n---\s*\n?([\s\S]*)$/);
+              const frontmatterMatch = text.match(/^\s*---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n?([\s\S]*)$/);
               if (!frontmatterMatch) {
                 return { frontmatter: '', content: text };
               }

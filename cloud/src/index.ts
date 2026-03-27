@@ -32,7 +32,7 @@ function normalizeSlug(value: string): string {
 
 // Ingestion validation: coerce external payloads into canonical DB-ready strings.
 function normalizePayload(raw: any): { payload?: IngestPayload; error?: string } {
-	if (!raw || typeof raw !== 'object') {
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
 		return { error: 'Payload must be a JSON object.' };
 	}
 
