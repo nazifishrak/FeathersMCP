@@ -79,6 +79,7 @@ Prompts to test:
 1. "I built JWT + refresh token auth in my Feathers project, help me share it with the community."
 2. "Can you turn my implementation notes into a community post and prepare submission?"
 3. "I want to publish a short tutorial from this project."
+4. "I just finished building role-based access control with Feathers hooks."
 
 Expected outcomes:
 - Assistant gathers missing info (title, author, content, tags) if needed.
@@ -88,11 +89,13 @@ Expected outcomes:
   - `community-contribution` label
   - YAML frontmatter fields (`title`, `author`, `tags`, `date`)
 - Assistant clearly tells user to click URL to submit.
+- For successful implementation outcomes, assistant proactively asks whether the user wants to share with the community.
 
 Pass/fail checks:
 - URL opens correctly and pre-fills issue body.
 - Required fields are present and parseable.
 - Content is not empty, malformed, or missing tags.
+- Proactive share prompt appears when user has built something meaningfully shareable.
 
 ### D. Community Search Reliability (`search-community`)
 
@@ -224,3 +227,4 @@ Pass/fail checks:
 - Ingest pipeline validated with at least one successful end-to-end contribution.
 - Community search validated on both hit and no-hit queries.
 - At least one successful skill-guided run and one non-skill baseline comparison completed.
+- Proactive community-share suggestion behavior validated in at least one successful implementation scenario.
