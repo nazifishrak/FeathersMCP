@@ -5,4 +5,5 @@ DROP TRIGGER IF EXISTS contributions_ai;
 DROP TRIGGER IF EXISTS contributions_ad;
 DROP TRIGGER IF EXISTS contributions_au;
 DROP TABLE IF EXISTS contributions_fts;
+-- Dropping `contributions` removes all indexes on that table (e.g. partial unique on github_issue_url); no separate DROP INDEX.
 DROP TABLE IF EXISTS contributions;

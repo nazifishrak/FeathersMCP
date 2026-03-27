@@ -232,45 +232,35 @@ export default {
 					);
 				}
 
-				const issueUrlBound = toSafeString(payload.issue_url);
-				const titleB = toSafeString(payload.title);
-				const authorB = toSafeString(payload.author);
-				const contentB = toSafeString(payload.content);
-				const tagsB = toSafeString(payload.tags);
+				const { title, author, content, tags, issue_url } = payload;
 
-				// Idempotency: same GitHub issue URL updates the existing row (re-label or close-after-label).
-				if (issueUrlBound && isValidGithubIssueUrl(issueUrlBound)) {
-					const existing = await env.DB.prepare(
-						`SELECT id FROM contributions WHERE github_issue_url = ? LIMIT 1`
+				// Valid GitHub issue URL: atomic upsert (partial unique index on non-empty URLs).
+				if (issue_url && isValidGithubIssueUrl(issue_url)) {
+					await env.DB.prepare(
+						`INSERT INTO contributions (title, author, content, tags, github_issue_url)
+						 VALUES (?, ?, ?, ?, ?)
+						 ON CONFLICT(github_issue_url) WHERE github_issue_url IS NOT NULL AND github_issue_url <> ''
+						 DO UPDATE SET
+						   title = excluded.title,
+						   author = excluded.author,
+						   content = excluded.content,
+						   tags = excluded.tags,
+						   updated_at = CURRENT_TIMESTAMP`
 					)
-						.bind(issueUrlBound)
-						.first<{ id: number }>();
-
-					if (existing?.id != null) {
-						await env.DB.prepare(
-							`UPDATE contributions
-							 SET title = ?, author = ?, content = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
-							 WHERE id = ?`
-						)
-							.bind(titleB, authorB, contentB, tagsB, existing.id)
-							.run();
-						return Response.json(
-							{ ok: true, message: 'Content updated successfully' },
-							{ status: 200 }
-						);
-					}
+						.bind(title, author, content, tags, issue_url)
+						.run();
+				} else {
+					await env.DB.prepare(
+						`INSERT INTO contributions (title, author, content, tags, github_issue_url)
+						 VALUES (?, ?, ?, ?, ?)`
+					)
+						.bind(title, author, content, tags, issue_url)
+						.run();
 				}
-
-				const insert = env.DB.prepare(
-					`INSERT INTO contributions (title, author, content, tags, github_issue_url)
-					 VALUES (?, ?, ?, ?, ?)`
-				);
-
-				await insert.bind(titleB, authorB, contentB, tagsB, issueUrlBound).run();
 
 				return Response.json(
 					{ ok: true, message: 'Content ingested successfully' },
-					{ status: 201 }
+					{ status: 200 }
 				);
 			} catch (e: any) {
 				const message = toSafeString(e?.message) || 'Unknown ingestion error';
