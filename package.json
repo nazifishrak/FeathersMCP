@@ -1,6 +1,6 @@
 {
   "name": "feathersjs-mcp",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "MCP server that gives AI assistants access to the FeathersJS v6 documentation",
   "homepage": "https://feathersjs.com",
   "repository": {

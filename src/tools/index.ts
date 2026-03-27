@@ -1,4 +1,5 @@
 import { getDocTool } from "./get-doc.js";
+import { getCommunityPostTool } from "./get-community-post.js";
 import { getMenuTool } from "./get-menu.js";
 import { getSchemaTool } from "./get-schema.js";
 import { searchDocTool } from "./search-doc.js";
@@ -8,6 +9,7 @@ import { searchCommunityTool } from "./search-community.js";
 // Export all tools as an array for easy registration
 export const tools = [
   getDocTool,
+  getCommunityPostTool,
   getMenuTool,
   getSchemaTool,
   searchDocTool,
@@ -18,6 +20,7 @@ export const tools = [
 // Re-export individual tools if needed
 export {
   getDocTool,
+  getCommunityPostTool,
   getMenuTool,
   getSchemaTool,
   searchDocTool,

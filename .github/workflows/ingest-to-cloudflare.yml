@@ -111,16 +111,6 @@ jobs:
               return normalized;
             };
 
-            const makeSlug = (titleText) => {
-              const slug = toSafeString(titleText)
-                .toLowerCase()
-                .replace(/[^a-z0-9\s-]/g, '')
-                .replace(/\s+/g, '-')
-                .replace(/-+/g, '-')
-                .replace(/^-|-$/g, '');
-              return slug || `post-${Date.now()}`;
-            };
-
             // Parsing: extract raw title/author/tags from frontmatter or issue body.
             const { frontmatter, content: frontmatterContent } = extractFrontmatterAndContent(issueBody);
             const parseSource = frontmatter || issueBody;
@@ -136,16 +126,11 @@ jobs:
             const normalizedAuthor = toSafeString(parsedAuthor) || 'unknown';
             const normalizedTags = parseTags(parsedTags);
             const normalizedIssueUrl = toSafeString(issueUrl);
-            const slug = makeSlug(normalizedTitle);
-            const excerptBase = normalizedContent.slice(0, 200).trim();
-            const excerpt = normalizedContent.length > 200 ? `${excerptBase}...` : excerptBase;
 
             const safePayload = {
               title: normalizedTitle,
-              slug,
               author: normalizedAuthor,
               content: normalizedContent,
-              excerpt: excerpt || 'No excerpt available.',
               tags: normalizedTags,
               issue_url: normalizedIssueUrl
             };
@@ -163,18 +148,15 @@ jobs:
             console.log(`Ingesting Community Post: ${safePayload.title}`);
             console.log({
               title: safePayload.title,
-              slug: safePayload.slug,
               author: safePayload.author,
               contentLen: safePayload.content.length,
-              excerptLen: safePayload.excerpt.length,
               tags: safePayload.tags,
               issue_url_present: Boolean(safePayload.issue_url),
               usedFallbacks: {
                 titleFromIssueTitle: !toSafeString(parsedTitle) && Boolean(toSafeString(issueTitle)),
                 defaultTitle: !toSafeString(parsedTitle) && !toSafeString(issueTitle),
                 defaultAuthor: !toSafeString(parsedAuthor),
-                defaultContent: !toSafeString(frontmatterContent || issueBody),
-                defaultSlug: safePayload.slug.startsWith('post-')
+                defaultContent: !toSafeString(frontmatterContent || issueBody)
               },
               parseSignals: {
                 frontmatterDetected: Boolean(frontmatter),

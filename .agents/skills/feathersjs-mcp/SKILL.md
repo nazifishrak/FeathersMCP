@@ -7,14 +7,14 @@ description: >
   feathersjs-mcp setup in Cursor, VS Code, or Claude Desktop (e.g., tools not appearing,
   MCP server not connecting); finding FeathersJS community tutorials or examples; and any
   FeathersJS error or implementation question. Key triggers: "feathers", "feathersjs",
-  "feathersjs-mcp", "FeatherMCP", authenticate('jwt') in a Feathers context, Feathers v6
+  "feathersjs-mcp", "FeathersMCP", authenticate('jwt') in a Feathers context, Feathers v6
   schemas/resolvers. Do NOT invoke for generic Node.js, Express, NestJS, Prisma, or
   socket.io questions that have no Feathers connection.
 ---
 
-# FeatherMCP Guide
+# FeathersMCP Guide
 
-You have access to the FeatherMCP MCP server, which gives you live access to the complete
+You have access to the FeathersMCP MCP server, which gives you live access to the complete
 FeathersJS v6 documentation (47 pages across API reference, guides, cookbook, and ecosystem).
 Always use these tools instead of answering from memory — FeathersJS has changed significantly
 across versions and training data is unreliable.
@@ -62,9 +62,9 @@ call `get-doc` before answering — the missing content is often the most import
 
 ---
 
-## Onboarding: Getting Started with FeatherMCP
+## Onboarding: Getting Started with FeathersMCP
 
-If the user seems new or is asking how to set up FeatherMCP, walk them through this directly in chat.
+If the user seems new or is asking how to set up FeathersMCP, walk them through this directly in chat.
 
 ### Step 1 — Install
 
@@ -241,7 +241,7 @@ When a user asks about real-world patterns, case studies, or "how has anyone use
 
 ## Documentation Structure Reference
 
-The FeatherMCP database contains 47 documents across 4 categories:
+The FeathersMCP database contains 47 documents across 4 categories:
 
 | Category | Count | Key topics |
 |----------|-------|-----------|

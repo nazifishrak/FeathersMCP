@@ -5,13 +5,13 @@ export interface Env {
 
 type IngestPayload = {
 	title: string;
-	slug: string;
 	author: string;
 	content: string;
-	excerpt: string;
 	tags: string;
 	issue_url: string;
 };
+
+const SEARCH_PREVIEW_LIMIT = 1500;
 
 // Helpers: shared normalization utilities for ingestion and search inputs.
 function toSafeString(value: unknown): string {
@@ -20,14 +20,44 @@ function toSafeString(value: unknown): string {
 	return String(value).trim();
 }
 
-function normalizeSlug(value: string): string {
-	const normalized = toSafeString(value)
-		.toLowerCase()
-		.replace(/[^a-z0-9\s-]/g, '')
-		.replace(/\s+/g, '-')
-		.replace(/-+/g, '-')
-		.replace(/^-|-$/g, '');
-	return normalized;
+/** Strips leading @ so callers never see @@ when a handle is prefixed for display. */
+function canonicalAuthorHandle(value: unknown): string {
+	const s = toSafeString(value).replace(/^@+/, '').trim();
+	return s || 'unknown';
+}
+
+/**
+ * Truncates `value` to at most `limit` characters, then appends "..." if truncated.
+ * Total length is therefore at most `limit + 3` (e.g. 1503 when `limit` is 1500).
+ */
+function truncatePreview(value: string, limit = SEARCH_PREVIEW_LIMIT): string {
+	if (value.length <= limit) return value;
+	return `${value.slice(0, limit)}...`;
+}
+
+function isValidHttpUrl(value: string): boolean {
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+	} catch {
+		return false;
+	}
+}
+
+/** Accepts only https (or http) URLs that point at a GitHub issue (classic org/repo/issues/N path). */
+function isValidGithubIssueUrl(value: string): boolean {
+	if (!isValidHttpUrl(value)) return false;
+	try {
+		const u = new URL(value);
+		const host = u.hostname.replace(/^www\./, '');
+		if (host !== 'github.com') return false;
+		const parts = u.pathname.split('/').filter(Boolean);
+		if (parts.length < 4) return false;
+		if (parts[2] !== 'issues') return false;
+		return /^\d+$/.test(parts[3] ?? '');
+	} catch {
+		return false;
+	}
 }
 
 // Ingestion validation: coerce external payloads into canonical DB-ready strings.
@@ -39,7 +69,6 @@ function normalizePayload(raw: any): { payload?: IngestPayload; error?: string }
 	const title = toSafeString(raw.title);
 	const author = toSafeString(raw.author);
 	const content = toSafeString(raw.content);
-	const providedSlug = normalizeSlug(raw.slug);
 	const issueUrl = toSafeString(raw.issue_url);
 	const tags = toSafeString(raw.tags);
 
@@ -47,20 +76,15 @@ function normalizePayload(raw: any): { payload?: IngestPayload; error?: string }
 	if (!author) return { error: 'Missing or invalid "author".' };
 	if (!content) return { error: 'Missing or invalid "content".' };
 
-	const slug = providedSlug || normalizeSlug(title);
-	if (!slug) return { error: 'Missing or invalid "slug".' };
-
-	const excerptInput = toSafeString(raw.excerpt);
-	const excerptBase = excerptInput || content.slice(0, 200).trim();
-	const excerpt = excerptBase || 'No excerpt available.';
+	if (issueUrl && !isValidGithubIssueUrl(issueUrl)) {
+		return { error: 'Invalid "issue_url": must be a GitHub issue URL (https://github.com/{owner}/{repo}/issues/{number}).' };
+	}
 
 	return {
 		payload: {
 			title,
-			slug,
 			author,
 			content,
-			excerpt,
 			tags,
 			issue_url: issueUrl
 		}
@@ -95,10 +119,8 @@ export default {
 					`SELECT
 						contributions.id,
 						contributions.title,
-						contributions.slug,
 						contributions.author,
 						contributions.content,
-						contributions.excerpt,
 						contributions.tags,
 						contributions.github_issue_url,
 						contributions.created_at
@@ -108,13 +130,77 @@ export default {
 					 ORDER BY bm25(contributions_fts, 10.0, 1.0, 3.0) LIMIT 10`
 				).bind(ftsQuery).all();
 
-				return Response.json(results);
+				const normalizedResults = (results || []).map((row: any) => {
+					const content = toSafeString(row.content);
+					const truncatedContent = truncatePreview(content || 'No content available.');
+					const issueUrlRaw = toSafeString(row.github_issue_url);
+					const issueUrl = isValidGithubIssueUrl(issueUrlRaw) ? issueUrlRaw : '';
+
+					return {
+						id: row.id,
+						title: toSafeString(row.title) || 'Untitled contribution',
+						author: canonicalAuthorHandle(row.author),
+						tags: toSafeString(row.tags),
+						content: truncatedContent,
+						github_issue_url: issueUrl,
+						issue_link_available: Boolean(issueUrl),
+						created_at: row.created_at
+					};
+				});
+
+				return Response.json(normalizedResults);
 			} catch (e: any) {
 				return new Response(`Search error: ${e.message}`, { status: 500 });
 			}
 		}
 
-		// 2. Ingestion Endpoint: POST /ingest (Called by GitHub Action)
+		// 2. Full Post Endpoint: GET /community-post?id=<id>
+		if (url.pathname === '/community-post' && request.method === 'GET') {
+			const idParam = toSafeString(url.searchParams.get('id'));
+
+			if (!idParam) {
+				return new Response('Missing id', { status: 400 });
+			}
+
+			try {
+				const parsedId = Number(idParam);
+				const hasValidId = Number.isInteger(parsedId) && parsedId > 0;
+
+				if (!hasValidId) {
+					return new Response('Invalid id', { status: 400 });
+				}
+
+				const queryResult = await env.DB.prepare(
+					`SELECT id, title, author, content, tags, github_issue_url, created_at
+						 FROM contributions
+						 WHERE id = ?
+						 LIMIT 1`
+				).bind(parsedId).all();
+
+				const row = queryResult?.results?.[0];
+				if (!row) {
+					return new Response('Community post not found', { status: 404 });
+				}
+
+				const issueUrlRaw = toSafeString(row.github_issue_url);
+				const issueUrl = isValidGithubIssueUrl(issueUrlRaw) ? issueUrlRaw : '';
+
+				return Response.json({
+					id: row.id,
+					title: toSafeString(row.title) || 'Untitled contribution',
+					author: canonicalAuthorHandle(row.author),
+					content: toSafeString(row.content),
+					tags: toSafeString(row.tags),
+					github_issue_url: issueUrl,
+					issue_link_available: Boolean(issueUrl),
+					created_at: row.created_at
+				});
+			} catch (e: any) {
+				return new Response(`Post fetch error: ${e.message}`, { status: 500 });
+			}
+		}
+
+		// 3. Ingestion Endpoint: POST /ingest (Called by GitHub Action)
 		if (url.pathname === '/ingest' && request.method === 'POST') {
 			// Security: always require a Bearer token (fail-closed).
 			// If INGESTION_SECRET is not set the endpoint rejects all callers.
@@ -147,50 +233,20 @@ export default {
 				}
 
 				const insert = env.DB.prepare(
-					`INSERT INTO contributions (title, slug, author, content, excerpt, tags, github_issue_url)
-					 VALUES (?, ?, ?, ?, ?, ?, ?)`
+					`INSERT INTO contributions (title, author, content, tags, github_issue_url)
+					 VALUES (?, ?, ?, ?, ?)`
 				);
 
-				try {
-					// DB write: persist canonical payload values after validation succeeds.
-					await insert
-						.bind(
-							payload.title,
-							payload.slug,
-							payload.author,
-							payload.content,
-							payload.excerpt,
-							payload.tags,
-							payload.issue_url
-						)
-						.run();
+				await insert
+					.bind(payload.title, payload.author, payload.content, payload.tags, payload.issue_url)
+					.run();
 
-					return Response.json(
-						{ ok: true, message: 'Content ingested successfully' },
-						{ status: 201 }
-					);
-				} catch (dbError: any) {
-					// DB error mapping: convert unique-slug DB errors into stable API codes.
-					const message = toSafeString(dbError?.message);
-					if (message.includes('UNIQUE constraint failed: contributions.slug')) {
-						const conflictError = new Error('Duplicate slug detected');
-						(conflictError as any).code = 'SLUG_CONFLICT';
-						throw conflictError;
-					}
-					throw dbError;
-				}
+				return Response.json(
+					{ ok: true, message: 'Content ingested successfully' },
+					{ status: 201 }
+				);
 			} catch (e: any) {
-				// API error envelope: return consistent JSON errors for callers and CI.
 				const message = toSafeString(e?.message) || 'Unknown ingestion error';
-				if (toSafeString((e as any)?.code) === 'SLUG_CONFLICT') {
-					return Response.json(
-						{
-							error: 'Contribution slug already exists',
-							code: 'SLUG_CONFLICT'
-						},
-						{ status: 409 }
-					);
-				}
 				return Response.json(
 					{
 						error: `Ingestion failed: ${message}`,
@@ -201,6 +257,6 @@ export default {
 			}
 		}
 
-		return new Response('FeathersMCP Cloud API: Use /search or /ingest', { status: 404 });
+		return new Response('FeathersMCP Cloud API: Use /search, /community-post, or /ingest', { status: 404 });
 	},
 };

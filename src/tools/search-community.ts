@@ -5,6 +5,12 @@ const schema = {
   query: z.string().describe("The search query for community posts (e.g. 'authentication', 'react-native')."),
 };
 
+function toSafeString(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
 async function handler({ query }: { query: string }) {
   const WORKER_URL = "https://feathermcp-api.nzfishrak60.workers.dev";
 
@@ -36,12 +42,25 @@ async function handler({ query }: { query: string }) {
       };
     }
 
-    const formattedResults = results.map(r => (
-      `### ${r.title}\n` +
-      `**Author:** @${r.author} | **Tags:** ${r.tags}\n` +
-      `**Content:** ${r.content}\n` +
-      `[Link to Issue](${r.github_issue_url})\n`
-    )).join("\n---\n\n");
+    const formattedResults = results
+      .map((r, index) => {
+        const id = r.id;
+        const title = toSafeString(r.title) || "Untitled contribution";
+        const author = toSafeString(r.author) || "unknown";
+        const tags = toSafeString(r.tags) || "none";
+        const content = toSafeString(r.content) || "No content available.";
+        const issueUrl = toSafeString(r.github_issue_url);
+        const issueLinkLine = issueUrl ? `[Link to Issue](${issueUrl})` : "Issue link unavailable";
+
+        return (
+          `### ${index + 1}. ${title}\n` +
+          `**ID:** ${id}\n` +
+          `**Author:** @${author} | **Tags:** ${tags}\n` +
+          `**Content:** ${content}\n` +
+          `${issueLinkLine}\n`
+        );
+      })
+      .join("\n---\n\n");
 
     return {
       content: [
@@ -65,7 +84,8 @@ async function handler({ query }: { query: string }) {
 
 export const searchCommunityTool: ToolDefinition<typeof schema> = {
   name: "search-community",
-  description: "Search the FeathersJS community knowledgebase for tutorials, projects, and insights shared by other users. Use this alongside search-doc.",
+  description:
+    "Search the FeathersJS community knowledge base for tutorials, projects, and insights other users shared (integrations, edge cases, combinations). You may use this before or after official doc tools—no fixed order. Returns id per hit; use get-community-post with that id for full post text.",
   schema,
   handler,
 };

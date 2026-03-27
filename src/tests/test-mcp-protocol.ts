@@ -96,7 +96,7 @@ async function main() {
   // Send initialized notification
   proc.stdin!.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
 
-  // Test 2: List tools — expect 6 (get-schema, get-menu, search-doc, get-doc, share-knowledge, search-community)
+  // Test 2: List tools — expect 7 (get-schema, get-menu, search-doc, get-doc, share-knowledge, search-community, get-community-post)
   console.log("\n── Test 2: tools/list ──");
   const toolsRes = await sendRequest(2, "tools/list", {});
   const tools = toolsRes.result?.tools || [];
@@ -106,11 +106,13 @@ async function main() {
     const params = Object.keys(tool.inputSchema?.properties || {});
     console.log(`      Parameters: ${params.length > 0 ? params.join(", ") : "(none)"}`);
   }
-  check(tools.length === 6, "All 6 tools registered", `Expected 6 tools, got ${tools.length}`);
+  check(tools.length === 7, "All 7 tools registered", `Expected 7 tools, got ${tools.length}`);
   const toolNames = tools.map((t: any) => t.name);
   check(
-    toolNames.includes("share-knowledge") && toolNames.includes("search-community"),
-    "share-knowledge and search-community are present",
+    toolNames.includes("share-knowledge") &&
+      toolNames.includes("search-community") &&
+      toolNames.includes("get-community-post"),
+    "share-knowledge, search-community, and get-community-post are present",
     `Missing tools — found: ${toolNames.join(", ")}`,
   );
 
@@ -432,6 +434,44 @@ async function main() {
     isCommunityValid && communityText.length > 0,
     "search-community returns a valid response",
     "search-community returned empty or unrecognised response",
+  );
+
+  // Test 21: get-community-post validation (missing id)
+  console.log("\n── Test 21: tools/call get-community-post (missing id) ──");
+  const gcpMissingRes = await sendRequest(21, "tools/call", {
+    name: "get-community-post",
+    arguments: {},
+  });
+  const gcpMissingText = gcpMissingRes.result?.content?.[0]?.text || "";
+  console.log("  Response preview:", gcpMissingText.substring(0, 120));
+  check(
+    gcpMissingText.toLowerCase().includes("error") || gcpMissingText.toLowerCase().includes("invalid") || gcpMissingText.toLowerCase().includes("required"),
+    "get-community-post rejects missing id with a clear validation message",
+    "Expected validation error when id is not provided",
+  );
+
+  // Test 22: get-community-post with id (happy path or graceful worker error)
+  console.log("\n── Test 22: tools/call get-community-post (with id) ──");
+  const gcpIdRes = await sendRequest(22, "tools/call", {
+    name: "get-community-post",
+    arguments: { id: 1 },
+  });
+  const gcpIdText = gcpIdRes.result?.content?.[0]?.text || "";
+  console.log("  Response preview:", gcpIdText.substring(0, 160));
+  let gcpIdOk = false;
+  try {
+    const parsed = JSON.parse(gcpIdText) as { id?: number; title?: string };
+    gcpIdOk = typeof parsed.id === "number" && typeof parsed.title === "string";
+  } catch {
+    gcpIdOk =
+      gcpIdText.includes("Community Post Fetch") ||
+      gcpIdText.includes("Failed to fetch") ||
+      gcpIdText.includes("not found");
+  }
+  check(
+    gcpIdOk && gcpIdText.length > 0,
+    "get-community-post with id returns JSON post or a structured fetch error",
+    "get-community-post id call returned unexpected output",
   );
 
   // Done
