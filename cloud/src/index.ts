@@ -13,6 +13,8 @@ type IngestPayload = {
 	issue_url: string;
 };
 
+const SEARCH_PREVIEW_LIMIT = 1500;
+
 // Helpers: shared normalization utilities for ingestion and search inputs.
 function toSafeString(value: unknown): string {
 	if (typeof value === 'string') return value.trim();
@@ -28,6 +30,20 @@ function normalizeSlug(value: string): string {
 		.replace(/-+/g, '-')
 		.replace(/^-|-$/g, '');
 	return normalized;
+}
+
+function truncatePreview(value: string, limit = SEARCH_PREVIEW_LIMIT): string {
+	if (value.length <= limit) return value;
+	return `${value.slice(0, limit)}...`;
+}
+
+function isValidHttpUrl(value: string): boolean {
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+	} catch {
+		return false;
+	}
 }
 
 // Ingestion validation: coerce external payloads into canonical DB-ready strings.
@@ -98,7 +114,6 @@ export default {
 						contributions.slug,
 						contributions.author,
 						contributions.content,
-						contributions.excerpt,
 						contributions.tags,
 						contributions.github_issue_url,
 						contributions.created_at
@@ -108,13 +123,91 @@ export default {
 					 ORDER BY bm25(contributions_fts, 10.0, 1.0, 3.0) LIMIT 10`
 				).bind(ftsQuery).all();
 
-				return Response.json(results);
+				const normalizedResults = (results || []).map((row: any) => {
+					const content = toSafeString(row.content);
+					const truncatedContent = truncatePreview(content || 'No content available.');
+					const issueUrlRaw = toSafeString(row.github_issue_url);
+					const issueUrl = isValidHttpUrl(issueUrlRaw) ? issueUrlRaw : '';
+
+					return {
+						id: row.id,
+						title: toSafeString(row.title) || 'Untitled contribution',
+						slug: toSafeString(row.slug),
+						author: toSafeString(row.author) || 'unknown',
+						tags: toSafeString(row.tags),
+						content: truncatedContent,
+						github_issue_url: issueUrl,
+						issue_link_available: Boolean(issueUrl),
+						created_at: row.created_at
+					};
+				});
+
+				return Response.json(normalizedResults);
 			} catch (e: any) {
 				return new Response(`Search error: ${e.message}`, { status: 500 });
 			}
 		}
 
-		// 2. Ingestion Endpoint: POST /ingest (Called by GitHub Action)
+		// 2. Full Post Endpoint: GET /community-post?id=<id> or /community-post?slug=<slug>
+		if (url.pathname === '/community-post' && request.method === 'GET') {
+			const idParam = toSafeString(url.searchParams.get('id'));
+			const slugParam = normalizeSlug(toSafeString(url.searchParams.get('slug')));
+
+			if (!idParam && !slugParam) {
+				return new Response('Missing id or slug', { status: 400 });
+			}
+
+			try {
+				const parsedId = Number(idParam);
+				const hasValidId = idParam && Number.isInteger(parsedId) && parsedId > 0;
+
+				let queryResult:
+					| {
+						results?: any[];
+					}
+					| undefined;
+
+				if (hasValidId) {
+					queryResult = await env.DB.prepare(
+						`SELECT id, title, slug, author, content, excerpt, tags, github_issue_url, created_at
+						 FROM contributions
+						 WHERE id = ?
+						 LIMIT 1`
+					).bind(parsedId).all();
+				} else if (slugParam) {
+					queryResult = await env.DB.prepare(
+						`SELECT id, title, slug, author, content, excerpt, tags, github_issue_url, created_at
+						 FROM contributions
+						 WHERE slug = ?
+						 LIMIT 1`
+					).bind(slugParam).all();
+				}
+
+				const row = queryResult?.results?.[0];
+				if (!row) {
+					return new Response('Community post not found', { status: 404 });
+				}
+
+				const issueUrlRaw = toSafeString(row.github_issue_url);
+				const issueUrl = isValidHttpUrl(issueUrlRaw) ? issueUrlRaw : '';
+
+				return Response.json({
+					id: row.id,
+					title: toSafeString(row.title) || 'Untitled contribution',
+					slug: toSafeString(row.slug),
+					author: toSafeString(row.author) || 'unknown',
+					content: toSafeString(row.content),
+					tags: toSafeString(row.tags),
+					github_issue_url: issueUrl,
+					issue_link_available: Boolean(issueUrl),
+					created_at: row.created_at
+				});
+			} catch (e: any) {
+				return new Response(`Post fetch error: ${e.message}`, { status: 500 });
+			}
+		}
+
+		// 3. Ingestion Endpoint: POST /ingest (Called by GitHub Action)
 		if (url.pathname === '/ingest' && request.method === 'POST') {
 			// Security: always require a Bearer token (fail-closed).
 			// If INGESTION_SECRET is not set the endpoint rejects all callers.
@@ -201,6 +294,6 @@ export default {
 			}
 		}
 
-		return new Response('FeathersMCP Cloud API: Use /search or /ingest', { status: 404 });
+		return new Response('FeathersMCP Cloud API: Use /search, /community-post, or /ingest', { status: 404 });
 	},
 };

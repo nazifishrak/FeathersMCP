@@ -1,12 +1,12 @@
-# FeatherMCP Internal Testing Plan (Prompt, Tooling, and Ingest Reliability)
+# FeathersMCP Internal Testing Plan (Prompt, Tooling, and Ingest Reliability)
 
-This document defines an internal test plan to verify that FeatherMCP works reliably in real assistant workflows for building and learning FeathersJS.
+This document defines an internal test plan to verify that FeathersMCP works reliably in real assistant workflows for building and learning FeathersJS.
 
 ## What We Are Testing
 
 We are not focusing on screen-reader or keyboard-only UI behavior in this plan.
 
-We are testing whether FeatherMCP:
+We are testing whether FeathesMCP:
 1. Calls the right tools at the right time.
 2. Retrieves correct FeathersJS documentation for implementation and learning tasks.
 3. Handles non-existent or unsupported FeathersJS requests safely and clearly.
@@ -18,7 +18,7 @@ We are testing whether FeatherMCP:
 
 ## Definition: “Accessibility” for This Plan
 
-For FeatherMCP, accessibility here means:
+For FeathersMCP, accessibility here means:
 - A user can set it up and use it independently.
 - Prompts in natural language still trigger the right MCP behavior.
 - Output is clear enough to act on without additional guidance.

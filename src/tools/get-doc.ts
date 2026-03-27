@@ -94,7 +94,7 @@ async function handler({ title, id, path }: { title?: string; id?: number; path?
 export const getDocTool: ToolDefinition<typeof schema> = {
   name: "get-doc",
   description:
-    "Retrieve the full content of a FeathersJS documentation page by id, path, or title. Prefer id or path over title, as titles are not unique. Use after search-doc when you need the complete text or all code examples for a specific page.",
+    "Fetch a full official FeathersJS doc page: returns complete page text plus all code examples. Look up by id, path, or title. Use after get-menu (paths/ids), after search-doc, or when the user gave an exact id/path/title. Prefer id or path over title.",
   schema,
   handler,
 };
