@@ -8,7 +8,7 @@
 |---|---|---|
 | Build & Test | `.github/workflows/build-and-test.yml` | Every push to `main` and all pull requests |
 | Release | `.github/workflows/release.yml` | Every push to `main` (after merge) |
-| Community Ingestion | `.github/workflows/ingest-to-cloudflare.yml` | Every closed issue with `community-contribution` label |
+| Community Ingestion | `.github/workflows/ingest-to-cloudflare.yml` | Closed issues with `community-contribution` and `approved-post` (workflow `if` gates who may trigger) |
 
 ## High-Level Description
 
@@ -68,7 +68,7 @@ Runs only on push to `main` (i.e., after a PR is merged). This workflow has thre
 
 ### 3. Community Ingestion (`ingest-to-cloudflare.yml`)
 
-Runs whenever a GitHub Issue is **closed**, provided it has the `community-contribution` label and was closed by a repository maintainer (Owner, Member, or Collaborator).
+Runs when a GitHub Issue is **closed**, provided it has both `community-contribution` and `approved-post` and the workflow `if` passes (historically aligned with maintainer closure; see workflow comments). The Worker **upserts** by GitHub issue URL when the same issue is re-ingested.
 
 **Steps:**
 

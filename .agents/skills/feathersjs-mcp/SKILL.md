@@ -223,7 +223,7 @@ When the user finishes building something interesting (feature, tutorial, integr
 3. Call `share-knowledge` with these four fields
 4. **In your reply, include the generated URL as a full clickable Markdown link** and tell the user to click it to submit — do not say "I shared it" since clicking the link is required to actually submit
 
-The link opens a GitHub issue pre-filled with YAML frontmatter and their content. When a maintainer closes it, the contribution is automatically ingested into the community knowledge base.
+The link opens a GitHub issue pre-filled with YAML frontmatter and their content. When a maintainer closes it (with `community-contribution` and `approved-post`), the contribution is ingested into the community knowledge base.
 
 ---
 

@@ -182,7 +182,7 @@ Provide at least one of `id`, `path`, or `title`. Prefer `id` or `path` for uniq
 
 ### `share-knowledge`
 
-Generates a pre-filled GitHub Issue link to share a tutorial or project with the FeathersJS community. Clicking the link opens a new issue with YAML frontmatter and your content already filled in. Ingestion only runs after a maintainer closes the issue and it includes both labels: `community-contribution` and `approved-post`.
+Generates a pre-filled GitHub Issue link to share a tutorial or project with the FeathersJS community. Clicking the link opens a new issue with YAML frontmatter and your content already filled in. Ingestion runs after a maintainer **closes** the issue when it includes both labels: `community-contribution` and `approved-post`; the Worker upserts by issue URL if the same issue is ingested again.
 
 | Parameter | Type     | Required | Description                           |
 | --------- | -------- | -------- | ------------------------------------- |

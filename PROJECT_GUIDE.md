@@ -283,7 +283,7 @@ Generates a pre-filled GitHub Issue URL that community members can click to subm
 
 **Input schema:** `{ title, author, content, tags }`
 
-The handler formats the contribution as YAML frontmatter + Markdown, constructs a `https://github.com/nazifishrak/FeathersMCP/issues/new?...&labels=community-contribution` link, and returns it to the user. Ingestion runs only when a maintainer closes the issue and both labels are present: `community-contribution` and `approved-post`; then `ingest-to-cloudflare.yml` POSTs the content to the Cloudflare Worker.
+The handler formats the contribution as YAML frontmatter + Markdown, constructs a `https://github.com/nazifishrak/FeathersMCP/issues/new?...&labels=community-contribution` link. Ingestion runs when a maintainer **closes** the issue and both labels are present: `community-contribution` and `approved-post`; then `ingest-to-cloudflare.yml` POSTs to the Worker, which upserts by GitHub issue URL when the same issue is processed again.
 
 ---
 
