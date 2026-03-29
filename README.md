@@ -1,14 +1,48 @@
 # FeathersJS MCP Server
 
-An MCP server that gives AI assistants access to the FeathersJS v6 documentation. Search, browse, and retrieve full documentation pages directly from your IDE.
+An MCP server that gives AI assistants access to **FeathersJS v6** official documentation and optional **community** knowledge—search, browse, and retrieve full pages from your IDE.
 
 [![npm](https://img.shields.io/npm/v/feathersjs-mcp)](https://www.npmjs.com/package/feathersjs-mcp)
 
-## Getting Started
+## Why use this?
 
-### 1. Add the MCP config file
+Feathers has a large surface area (hooks, services, auth, channels, schemas). Generic models often **mix versions**, invent APIs, or skip edge cases. This server connects your assistant to **real v6 docs** (and optional community posts) so answers can be **grounded in sources** with links to `https://v6.feathersjs.com/...`.
 
-**Cursor** — create `.cursor/mcp.json` in your project root:
+| Without MCP | With `feathersjs-mcp` |
+|-------------|------------------------|
+| Best-effort recall from training data | Search and fetch **actual** doc pages and code examples |
+| Risk of outdated or wrong API names | **`source_url`** and snippets tied to the bundled docs DB |
+| Community tips only if the model remembers them | Optional **`search-community`** / **`get-community-post`** (when configured server-side) |
+
+Use it whenever you work on FeathersJS—especially hooks, authentication, and v6 schemas/resolvers.
+
+---
+
+## Requirements
+
+- **Node.js** (LTS recommended, e.g. 20.x) so `npx` can run the published package.
+- The config file must live at the **workspace root** (see below)—this is the most common reason a server “does not connect.”
+
+---
+
+## Put the config at the workspace root
+
+Your IDE loads MCP config from the **folder you opened**, not from subfolders.
+
+- **Correct:** Open `my-app/` in VS Code or Cursor and place `.vscode/mcp.json` or `.cursor/mcp.json` in **`my-app/`** (same level as `package.json` if that is your app root).
+- **Wrong:** Put the MCP JSON only under `my-app/packages/api/` or `my-app/docs/` — many clients (including **GitHub Copilot** in VS Code) will **not** pick up the server for the workspace, and chat may show no tools.
+
+If you use a monorepo, either open the repo root and put config there, or open the specific package as its own workspace and put config in **that** folder’s root.
+
+---
+
+## Add the MCP server
+
+Pick **one** client section below. After saving the file, **reload the window** or restart the IDE once so the server is registered.
+
+### Cursor
+
+Create **`.cursor/mcp.json`** at the workspace root:
 
 ```json
 {
@@ -21,7 +55,9 @@ An MCP server that gives AI assistants access to the FeathersJS v6 documentation
 }
 ```
 
-**VS Code** — create `.vscode/mcp.json` in your project root:
+### VS Code (including GitHub Copilot Chat)
+
+Create **`.vscode/mcp.json`** at the workspace root:
 
 ```json
 {
@@ -35,7 +71,11 @@ An MCP server that gives AI assistants access to the FeathersJS v6 documentation
 }
 ```
 
-**Claude Desktop** — add to your `claude_desktop_config.json`:
+GitHub Copilot uses the same VS Code workspace; if the MCP file is not at the root of the **opened folder**, Copilot may not list or run the server.
+
+### Claude Desktop
+
+Add to `claude_desktop_config.json` (see [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user)):
 
 ```json
 {
@@ -48,31 +88,48 @@ An MCP server that gives AI assistants access to the FeathersJS v6 documentation
 }
 ```
 
-That's it — `npx` downloads and runs the package automatically on first use.
+The first run may download the package via `npx`.
 
-### 2. Use MCP tools in chat
+---
 
-Open your IDE and the FeathersJS documentation tools will be available in chat. Ask your AI assistant about FeathersJS hooks, services, authentication, or any other topic.
+## Verify it is working
 
-### Optional: install locally
+1. **Reload** the window after editing MCP config (`Developer: Reload Window` in VS Code, or restart Cursor).
+2. **Command Palette** — **Windows / Linux:** `Ctrl+Shift+P` · **macOS:** `Cmd+Shift+P`. Type **`MCP`** and look for commands such as listing MCP servers, opening logs, or server status (exact names depend on your VS Code / Cursor version).
+3. **In chat**, ask something that should trigger tools, for example:  
+   `What FeathersJS topics are covered in the official docs?`  
+   You should see the assistant call **`get-menu`** (or **`search-doc`**) rather than answering from memory alone.
+
+If the palette shows no MCP errors but tools never appear, re-check that the JSON file is at the **workspace root** ([section above](#put-the-config-at-the-workspace-root)).
+
+### Optional: install locally (pin version + easier PATH)
 
 ```bash
 npm install feathersjs-mcp
 ```
 
-Locks the version in your `package.json` so all contributors use the same release. Also required for the troubleshooting Option B below.
+Then you can point `command` / `args` at `node_modules/feathersjs-mcp/build/index.js` and a full path to `node` if `npx` is not found (see [Troubleshooting](#troubleshooting)).
+
+---
 
 ## GitHub Release
 
-Download the latest zip from [Releases](https://github.com/nazifishrak/FeathersMCP/releases). Extract it, open the folder in your IDE, and the MCP server is ready to use. The archive includes pre-configured `.vscode/` and `.cursor/` settings — no setup needed.
+Download the latest zip from [Releases](https://github.com/nazifishrak/FeathersMCP/releases). Extract it, open the folder in your IDE, and use the included `.vscode/` / `.cursor/` examples if present.
+
+---
 
 ## Troubleshooting
 
+### MCP config in a nested folder
+
+**Symptom:** GitHub Copilot / VS Code / Cursor never connects to the server, or tools never appear.  
+**Fix:** Move **`.vscode/mcp.json`** or **`.cursor/mcp.json`** to the **root of the folder you opened** in the IDE, then reload the window.
+
 ### macOS: `spawn npx ENOENT` or `spawn node ENOENT`
 
-On macOS, if Cursor or VS Code was opened from the Dock or Finder (not the terminal), it may not have `node` or `npx` in its PATH.
+If the app was launched from the Dock/Finder, it may not inherit your shell `PATH`.
 
-**Option A:** Open your project from the terminal so the IDE inherits your shell PATH:
+**Option A:** Open the project from a terminal so the IDE inherits PATH:
 
 ```bash
 cursor .
@@ -80,7 +137,7 @@ cursor .
 code .
 ```
 
-**Option B:** Install the package locally (see [Optional: install locally](#optional-install-locally)) and use the full path to `node` in your config. Find it by running `which node`, then update the config file:
+**Option B:** Install the package locally and use the full path to `node` (from `which node`):
 
 ```json
 {
@@ -93,108 +150,107 @@ code .
 }
 ```
 
-Replace `/opt/homebrew/bin/node` with the output of `which node` on your machine.
+Adjust `command` to match your machine.
 
-## Agent Skill (optional)
+---
 
-The `feathersjs-mcp` skill adds structured guidance on top of the MCP tools — doc-grounded answers, onboarding, community search, and share flow. It works in any AI coding assistant that supports the `.agents/skills/` standard.
+## Agent skill (optional)
 
-> Without the skill, your AI assistant can still call the MCP tools. With it, it follows a consistent workflow and never answers FeathersJS questions from training data alone.
+The `feathersjs-mcp` **skill** adds structured guidance on top of the tools—doc workflow, community search, and share flow—for clients that support `.agents/skills/` (see [agentskills.io](https://agentskills.io)).
 
-**Supported clients:** Claude Code, Cursor, Windsurf, Gemini CLI, and others that follow the [agentskills.io](https://agentskills.io) standard.
+> Without the skill, tools still work. With the skill, assistants are nudged to use them consistently.
 
-### Install
-
-Run this from your project root:
+**Install** (from project root):
 
 ```bash
 npx feathersjs-mcp install-skill
 ```
 
-This writes `.agents/skills/feathersjs-mcp/SKILL.md` into your project. Your AI assistant picks it up automatically — no restart needed. Re-running the command updates the skill to the version bundled with the current npm release.
+This writes `.agents/skills/feathersjs-mcp/SKILL.md`. Re-run to update to the bundled version.
 
-**Verify** the skill loaded by asking your AI assistant:
+**Quick check:** Ask “What FeathersJS topics are covered in the docs?” and confirm **`get-menu`** (or similar) is called.
 
-```
-What FeathersJS topics are covered in the docs?
-```
+**Uninstall:** `rm -rf .agents/skills/feathersjs-mcp`
 
-You should see it call `get-menu` before answering. If it answers without calling any MCP tool, confirm the MCP server is also configured (see [Getting Started](#getting-started) above).
+**Deeper checks:** see [MODEL_MCP_EVAL.md](./MODEL_MCP_EVAL.md) if you maintain evaluation notes in this repo.
 
-### Verify the skill is working
+---
 
-Run through these four checks — each tests a different part of the skill:
+## Available tools
 
-| Check | What to ask | What to look for |
-|-------|-------------|-----------------|
-| **Doc grounding** | `How do before hooks work in FeathersJS v6?` | Calls `search-doc`, includes a `source_url` link |
-| **Unsupported feature** | `Does FeathersJS have built-in GraphQL support?` | Searches first, then explicitly says "not found in docs" — no invented API names |
-| **Community search** | `Are there community examples of Google OAuth in FeathersJS?` | Calls both `search-doc` and `search-community`, labels results separately |
-| **Share flow** | `I just built a JWT revocation feature in FeathersJS. Help me share it.` | Calls `share-knowledge` and returns a clickable GitHub issue URL — does not claim it submitted anything |
+The server exposes **seven** tools over MCP:
 
-### Uninstall
+| Tool | Purpose |
+|------|---------|
+| `get-schema` | Schema of the bundled `documents` table (for query-aware assistants). |
+| `get-menu` | Full doc navigation (categories, paths, ids). |
+| `search-doc` | Full-text search over official v6 docs (snippets + URLs). |
+| `get-doc` | Full page text and code examples by id, path, or title. |
+| `search-community` | Search community contributions (requires hosted Worker; may be empty). |
+| `get-community-post` | Full community post by id. |
+| `share-knowledge` | Build a pre-filled GitHub issue URL for community submissions. |
 
-```bash
-rm -rf .agents/skills/feathersjs-mcp
-```
+### `get-schema`
+
+No parameters. Returns metadata for the `documents` table used by search tools.
+
+### `get-menu`
+
+No parameters. Returns the official doc structure (on the order of **47** pages across `api`, `guides`, `cookbook`, `ecosystem`).
+
+### `search-doc`
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | yes | Search text |
+| `category` | string | no | `api`, `guides`, `cookbook`, or `ecosystem` |
+| `limit` | number | no | Max hits (default: 5) |
+
+### `get-doc`
+
+Provide **at least one** of `id`, `path`, or `title`. Prefer **`id`** or **`path`** for uniqueness.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | number | From `get-menu` or search |
+| `path` | string | e.g. `api/hooks`, `guides/basics/setup` |
+| `title` | string | Exact title (can be ambiguous) |
+
+### `share-knowledge`
+
+| Parameter | Type | Required |
+|-----------|------|----------|
+| `title` | string | yes |
+| `author` | string | yes (e.g. GitHub username) |
+| `content` | string | yes (Markdown) |
+| `tags` | string[] | yes |
+
+Opens a draft GitHub issue; publishing to the community index follows your repo’s workflow and labels.
+
+### `search-community`
+
+| Parameter | Type | Required |
+|-----------|------|----------|
+| `query` | string | yes |
+
+### `get-community-post`
+
+| Parameter | Type | Required |
+|-----------|------|----------|
+| `id` | number | yes (from `search-community`) |
 
 ---
 
 ## Links
 
-- **npm:** https://www.npmjs.com/package/feathersjs-mcp
-- **GitHub:** https://github.com/nazifishrak/FeathersMCP
-- **Internal Testing Plan:** [ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md)
+- **npm:** https://www.npmjs.com/package/feathersjs-mcp  
+- **GitHub:** https://github.com/nazifishrak/FeathersMCP  
+- **Feathers v6 site:** https://v6.feathersjs.com/
 
-## Available Tools
+---
 
-The server exposes 6 tools over the MCP protocol:
+## More in this repository
 
-### `get-schema`
-
-Returns the database schema for the documentation tables. No parameters.
-
-### `get-menu`
-
-Returns the full navigation structure of the FeathersJS documentation — 47 documents across 4 categories (`api`, `guides`, `cookbook`, `ecosystem`). Call this first to understand what's available. No parameters.
-
-### `search-doc`
-
-Full-text search across the documentation with FTS5 and Porter stemming.
-
-| Parameter  | Type   | Required | Description                                                     |
-| ---------- | ------ | -------- | --------------------------------------------------------------- |
-| `query`    | string | yes      | Search query                                                    |
-| `category` | string | no       | Filter by category: `api`, `guides`, `cookbook`, or `ecosystem` |
-| `limit`    | number | no       | Max results (default: 5)                                        |
-
-### `get-doc`
-
-Fetches the full content of a documentation page. Use after `search-doc` when you need the complete text or all code examples.
-
-| Parameter | Type   | Required | Description                                           |
-| --------- | ------ | -------- | ----------------------------------------------------- |
-| `id`      | number | no       | Document ID from `get-menu` or search results         |
-| `path`    | string | no       | Source path (e.g. `api/hooks`, `guides/basics/setup`) |
-| `title`   | string | no       | Exact document title (e.g. `Hooks`)                   |
-
-Provide at least one of `id`, `path`, or `title`. Prefer `id` or `path` for unique lookups.
-
-### `share-knowledge`
-
-Generates a pre-filled GitHub Issue link to share a tutorial or project with the FeathersJS community. Clicking the link opens a new issue with YAML frontmatter and your content already filled in. Ingestion only runs after a maintainer closes the issue and it includes both labels: `community-contribution` and `approved-post`.
-
-| Parameter | Type     | Required | Description                           |
-| --------- | -------- | -------- | ------------------------------------- |
-| `title`   | string   | yes      | Title of your tutorial or project     |
-| `author`  | string   | yes      | Your GitHub username                  |
-| `content` | string   | yes      | Markdown body of your contribution    |
-| `tags`    | string[] | yes      | Topic tags (e.g. `["hooks", "auth"]`) |
-
-### `search-community`
-
-Searches the FeathersJS community knowledge base (Cloudflare D1 with FTS5) for tutorials and projects shared by other users. Use alongside `search-doc` for comprehensive answers.
-
-| Parameter | Type   | Required | Description                                |
-| --------- | ------ | -------- | ------------------------------------------ |
-| `query`   | string | yes      | Search terms (e.g. `"jwt authentication"`) |
+- [PROJECT_DEEP_DIVE.md](./PROJECT_DEEP_DIVE.md) — architecture and data flow  
+- [ACCESSIBILITY_TESTING.md](./ACCESSIBILITY_TESTING.md) — internal testing notes  
+- [CI_CD.md](./CI_CD.md) — CI/CD overview  
