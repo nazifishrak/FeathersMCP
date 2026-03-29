@@ -232,18 +232,35 @@ export default {
 					);
 				}
 
-				const insert = env.DB.prepare(
-					`INSERT INTO contributions (title, author, content, tags, github_issue_url)
-					 VALUES (?, ?, ?, ?, ?)`
-				);
+				const { title, author, content, tags, issue_url } = payload;
 
-				await insert
-					.bind(payload.title, payload.author, payload.content, payload.tags, payload.issue_url)
-					.run();
+				// Valid GitHub issue URL: atomic upsert (partial unique index on non-empty URLs).
+				if (issue_url && isValidGithubIssueUrl(issue_url)) {
+					await env.DB.prepare(
+						`INSERT INTO contributions (title, author, content, tags, github_issue_url)
+						 VALUES (?, ?, ?, ?, ?)
+						 ON CONFLICT(github_issue_url) WHERE github_issue_url IS NOT NULL AND github_issue_url <> ''
+						 DO UPDATE SET
+						   title = excluded.title,
+						   author = excluded.author,
+						   content = excluded.content,
+						   tags = excluded.tags,
+						   updated_at = CURRENT_TIMESTAMP`
+					)
+						.bind(title, author, content, tags, issue_url)
+						.run();
+				} else {
+					await env.DB.prepare(
+						`INSERT INTO contributions (title, author, content, tags, github_issue_url)
+						 VALUES (?, ?, ?, ?, ?)`
+					)
+						.bind(title, author, content, tags, issue_url)
+						.run();
+				}
 
 				return Response.json(
 					{ ok: true, message: 'Content ingested successfully' },
-					{ status: 201 }
+					{ status: 200 }
 				);
 			} catch (e: any) {
 				const message = toSafeString(e?.message) || 'Unknown ingestion error';

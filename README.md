@@ -93,6 +93,17 @@ The first run may download the package via `npx`.
 ---
 
 ## Verify it is working
+### 2. Enable the server in your IDE
+
+**Cursor:** Open **Cursor Settings → Tools & MCP** → find `feathersjs` under *Installed MCP Servers* → make sure the toggle is **enabled** (green) and it shows a green dot with "7 tools enabled." The JSON config alone is not enough — the server must be toggled on in this settings panel.
+
+**VS Code + Copilot:** Run `MCP: List Servers` from the command palette → confirm `feathersjs` shows as Running → open Copilot Chat → switch to **Agent** mode → click the Tools icon and enable `feathersjs` tools.
+
+**Claude Desktop:** Restart the app — tools appear automatically.
+
+### 3. Use MCP tools in chat
+
+Open your IDE's AI chat (in **Agent** mode for Cursor and VS Code) and the FeathersJS documentation tools will be available. Ask your AI assistant about FeathersJS hooks, services, authentication, or any other topic.
 
 1. **Reload** the window after editing MCP config (`Developer: Reload Window` in VS Code, or restart Cursor).
 2. **Command Palette** — **Windows / Linux:** `Ctrl+Shift+P` · **macOS:** `Cmd+Shift+P`. Type **`MCP`** and look for commands such as listing MCP servers, opening logs, or server status (exact names depend on your VS Code / Cursor version).
