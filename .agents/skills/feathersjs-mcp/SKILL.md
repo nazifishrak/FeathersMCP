@@ -19,6 +19,8 @@ description: >
 > Before answering ANY FeathersJS question, you **must call at least `search-doc`** (and `search-community` when routing rules below apply).
 > Do not answer from training data, from reading this file, or from memory. Call the MCP tools first, then answer using their results.
 > FeathersJS has changed significantly across versions — your training data is unreliable for it.
+>
+> **Ask before assuming runtime.** FeathersJS supports Node.js, Bun, Deno, and Cloudflare Workers — each has different setup, config, and deployment. If the user asks about setup, deployment, or configuration without specifying a runtime, ask which one they're targeting before searching. Do not default to Node.js.
 
 This skill gives you live access to the complete FeathersJS v6 documentation (47 pages across API reference, guides, cookbook, and ecosystem) via the FeathersMCP MCP server.
 
@@ -26,26 +28,26 @@ This skill gives you live access to the complete FeathersJS v6 documentation (47
 
 This skill activates for any FeathersJS question. Here's what it covers:
 
-| User need | What this skill does |
-|-----------|----------------------|
-| "How do I build X in FeathersJS?" | Searches official docs, retrieves full page if truncated, supplements with community patterns |
-| "What is X / explain Y" | Grounds the explanation in retrieved doc content rather than training data |
-| "Set up feathersjs-mcp in Cursor/VS Code/Claude Desktop" | Walks through installation and activation step by step |
-| "My MCP server isn't connecting / tools not showing" | Diagnoses the problem using the troubleshooting table |
-| "Can FeathersJS do X?" (X not in docs) | Searches honestly, says "not found", suggests the nearest documented alternative |
-| "I just built X — can I share it?" | Calls `share-knowledge` and gives the user a GitHub link to click |
-| "Has anyone done X with FeathersJS?" | Searches community knowledge base alongside official docs |
+| User need                                                | What this skill does                                                                          |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| "How do I build X in FeathersJS?"                        | Searches official docs, retrieves full page if truncated, supplements with community patterns |
+| "What is X / explain Y"                                  | Grounds the explanation in retrieved doc content rather than training data                    |
+| "Set up feathersjs-mcp in Cursor/VS Code/Claude Desktop" | Walks through installation and activation step by step                                        |
+| "My MCP server isn't connecting / tools not showing"     | Diagnoses the problem using the troubleshooting table                                         |
+| "Can FeathersJS do X?" (X not in docs)                   | Searches honestly, says "not found", suggests the nearest documented alternative              |
+| "I just built X — can I share it?"                       | Calls `share-knowledge` and gives the user a GitHub link to click                             |
+| "Has anyone done X with FeathersJS?"                     | Searches community knowledge base alongside official docs                                     |
 
 ## Available MCP Tools
 
-| Tool | Purpose | When to use |
-|------|---------|-------------|
-| `get-menu` | Full nav structure — 47 docs across 4 categories | First call when orienting or browsing topics |
-| `search-doc` | Full-text search (FTS5 + BM25) across all docs | Any implementation or concept question |
-| `get-doc` | Fetch a full doc page by `id`, `path`, or `title` | After search, when you need complete examples or full context |
-| `search-community` | Search community tutorials and projects (Cloudflare D1) | When the question involves implementation patterns, integrations, architecture, or how-to approaches (see routing rules below) |
-| `share-knowledge` | Generate a pre-filled GitHub Issue URL for community contribution | When user finishes something worth sharing |
-| `get-schema` | Returns the database column structure | Debugging only — rarely needed |
+| Tool               | Purpose                                                           | When to use                                                                                                                    |
+| ------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `get-menu`         | Full nav structure — 47 docs across 4 categories                  | First call when orienting or browsing topics                                                                                   |
+| `search-doc`       | Full-text search (FTS5 + BM25) across all docs                    | Any implementation or concept question                                                                                         |
+| `get-doc`          | Fetch a full doc page by `id`, `path`, or `title`                 | After search, when you need complete examples or full context                                                                  |
+| `search-community` | Search community tutorials and projects (Cloudflare D1)           | When the question involves implementation patterns, integrations, architecture, or how-to approaches (see routing rules below) |
+| `share-knowledge`  | Generate a pre-filled GitHub Issue URL for community contribution | When user finishes something worth sharing                                                                                     |
+| `get-schema`       | Returns the database column structure                             | Debugging only — rarely needed                                                                                                 |
 
 ---
 
@@ -79,7 +81,7 @@ Follow this decision tree for every FeathersJS question:
 
 Do not guess when a wrong assumption would lead to a significantly different answer. Ask a brief clarifying question first in these cases:
 
-- **Runtime is ambiguous** — FeathersJS runs on Node.js (default), Bun, Deno, and Cloudflare Workers. If the user asks about setup, deployment, configuration, or runtime-specific behavior without specifying which runtime, ask: *"Which runtime are you targeting — Node.js, Bun, Deno, or Cloudflare Workers? The setup differs for each."* The docs have separate pages per runtime; searching the wrong one wastes context and produces misleading instructions.
+- **Runtime is ambiguous** — FeathersJS runs on Node.js (default), Bun, Deno, and Cloudflare Workers. If the user asks about setup, deployment, configuration, or runtime-specific behavior without specifying which runtime, ask: _"Which runtime are you targeting — Node.js, Bun, Deno, or Cloudflare Workers? The setup differs for each."_ The docs have separate pages per runtime; searching the wrong one wastes context and produces misleading instructions.
 - **Auth provider is unspecified** — "How do I add auth?" could mean local email/password, Auth0, Google OAuth, Firebase, or custom JWT. Ask which provider or strategy before searching.
 - **Scope is too broad to produce a useful answer** — e.g. "How do I use hooks?" covers dozens of patterns. Ask what the hook should do (validate input? enforce permissions? transform output?).
 
@@ -98,6 +100,7 @@ If the user seems new or is asking how to set up FeathersMCP, walk them through 
 ### Step 1 — Install
 
 **Cursor** — create `.cursor/mcp.json` in your project root:
+
 ```json
 {
   "mcpServers": {
@@ -110,6 +113,7 @@ If the user seems new or is asking how to set up FeathersMCP, walk them through 
 ```
 
 **VS Code** — create `.vscode/mcp.json` in your project root:
+
 ```json
 {
   "servers": {
@@ -123,6 +127,7 @@ If the user seems new or is asking how to set up FeathersMCP, walk them through 
 ```
 
 **Claude Desktop** — add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
 ```json
 {
   "mcpServers": {
@@ -138,13 +143,14 @@ If the user seems new or is asking how to set up FeathersMCP, walk them through 
 
 ### Step 2 — Activate in your IDE
 
-- **Cursor:** Reload window → open **Cursor Settings → Tools & MCP** → find `feathersjs` under *Installed MCP Servers* → make sure the toggle is **enabled** (green) and the server shows a green dot with "7 tools enabled" → switch chat to **Agent** mode. The JSON config alone is not enough — the server must be toggled on in this settings panel.
+- **Cursor:** Reload window → open **Cursor Settings → Tools & MCP** → find `feathersjs` under _Installed MCP Servers_ → make sure the toggle is **enabled** (green) and the server shows a green dot with "7 tools enabled" → switch chat to **Agent** mode. The JSON config alone is not enough — the server must be toggled on in this settings panel.
 - **VS Code + Copilot:** Reload window → `MCP: List Servers` → confirm Running → open Copilot Chat → switch to **Agent** mode → click the Tools icon and enable `feathersjs` tools
 - **Claude Desktop:** Restart the app — tools appear automatically
 
 ### Step 3 — Verify it works
 
 Ask any of these to confirm the tools are firing:
+
 - "What topics does the FeathersJS documentation cover?"
 - "How do hooks work in FeathersJS?"
 - "Show me how to create a service in FeathersJS v6."
@@ -153,13 +159,13 @@ You should see the AI call `search-doc` or `get-menu` before answering.
 
 ### Troubleshooting
 
-| Problem | Fix |
-|---------|-----|
-| `spawn npx ENOENT` on macOS | Open your IDE from the terminal: `cursor .` or `code .` so it inherits your shell PATH |
-| Server shows as Stopped | Click it and select Start Server; if that fails, verify `npx` is on your PATH |
-| Tools not appearing in Cursor chat | First check **Cursor Settings → Tools & MCP** — the `feathersjs` server must be toggled **on** (the toggle next to it should be green). If it's off, enable it. Then make sure you're in **Agent** mode, not Ask or Edit mode. |
-| Tools not appearing in Copilot chat | Make sure you're in **Agent** mode, not Ask or Edit mode |
-| Want a locked version | See **Locked version config** below |
+| Problem                             | Fix                                                                                                                                                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `spawn npx ENOENT` on macOS         | Open your IDE from the terminal: `cursor .` or `code .` so it inherits your shell PATH                                                                                                                                         |
+| Server shows as Stopped             | Click it and select Start Server; if that fails, verify `npx` is on your PATH                                                                                                                                                  |
+| Tools not appearing in Cursor chat  | First check **Cursor Settings → Tools & MCP** — the `feathersjs` server must be toggled **on** (the toggle next to it should be green). If it's off, enable it. Then make sure you're in **Agent** mode, not Ask or Edit mode. |
+| Tools not appearing in Copilot chat | Make sure you're in **Agent** mode, not Ask or Edit mode                                                                                                                                                                       |
+| Want a locked version               | See **Locked version config** below                                                                                                                                                                                            |
 
 #### Locked version config
 
@@ -184,14 +190,14 @@ On macOS, if `node` is not on your PATH, replace `"node"` with the full path fro
 
 Help users get better results by framing questions to trigger good tool calls:
 
-| Goal | Suggested phrasing |
-|------|--------------------|
-| Learn a concept | "Explain [hooks / services / channels] in FeathersJS v6 using the docs" |
-| Implement a feature | "How do I implement [chat moderation hooks / JWT auth / file uploads] in FeathersJS?" |
-| Find a recipe | "Is there a cookbook recipe for [revoking JWTs / deploying to Docker / OAuth with Google]?" |
-| Explore what's available | "What topics does the FeathersJS documentation cover?" |
-| Troubleshoot | "I'm getting [error] when using [hook/service/auth] in FeathersJS — what does the docs say?" |
-| Community patterns | "Are there any community examples of [topic] with FeathersJS?" |
+| Goal                     | Suggested phrasing                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------- |
+| Learn a concept          | "Explain [hooks / services / channels] in FeathersJS v6 using the docs"                      |
+| Implement a feature      | "How do I implement [chat moderation hooks / JWT auth / file uploads] in FeathersJS?"        |
+| Find a recipe            | "Is there a cookbook recipe for [revoking JWTs / deploying to Docker / OAuth with Google]?"  |
+| Explore what's available | "What topics does the FeathersJS documentation cover?"                                       |
+| Troubleshoot             | "I'm getting [error] when using [hook/service/auth] in FeathersJS — what does the docs say?" |
+| Community patterns       | "Are there any community examples of [topic] with FeathersJS?"                               |
 
 ---
 
@@ -206,6 +212,7 @@ When a user asks how to build something in FeathersJS:
 5. **Cite sources** — always include the `source_url` from the doc so the user can read further
 
 Example: user asks "how do I add chat moderation hooks?"
+
 - `search-doc("hooks moderation")` + `search-community("moderation hooks")` → call both in parallel
 - `get-doc(id)` → get full hooks page with all code examples
 - Answer: combine official docs and community patterns, show TypeScript example, link to source
@@ -233,6 +240,7 @@ If the user asks about something that isn't in the FeathersJS v6 docs:
 4. Never invent method names, package names, or configuration options
 
 Common edge cases:
+
 - **GraphQL** — not covered in docs; mention REST + WebSocket transport as the documented approach
 - **Version gaps** — if user asks about v4/v5 APIs, note that this tool covers v6 only
 - **Specific ORM integrations beyond what's in docs** — acknowledge the gap and suggest checking the ecosystem page
@@ -272,11 +280,11 @@ When the question matches the routing signals above (implementation patterns, in
 
 The FeathersMCP database contains 47 documents across 4 categories:
 
-| Category | Count | Key topics |
-|----------|-------|-----------|
-| `api` | 17 | Application, Authentication, Hooks, Services, Events, Errors, Channels, HTTP, Browser, Bun, Cloudflare, Deno |
-| `guides` | 14 | Quick Start, Creating an App, Schemas & Resolvers, Hooks, Authentication, Services, Writing Tests, Migrating to v5, Security |
-| `cookbook` | 15 | OAuth (Google, Facebook, Auth0, Firebase), JWT (stateless, revoking), File uploads, Docker, Scaling, Server-side rendering |
-| `ecosystem` | 1 | Ecosystem overview |
+| Category    | Count | Key topics                                                                                                                   |
+| ----------- | ----- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `api`       | 17    | Application, Authentication, Hooks, Services, Events, Errors, Channels, HTTP, Browser, Bun, Cloudflare, Deno                 |
+| `guides`    | 14    | Quick Start, Creating an App, Schemas & Resolvers, Hooks, Authentication, Services, Writing Tests, Migrating to v5, Security |
+| `cookbook`  | 15    | OAuth (Google, Facebook, Auth0, Firebase), JWT (stateless, revoking), File uploads, Docker, Scaling, Server-side rendering   |
+| `ecosystem` | 1     | Ecosystem overview                                                                                                           |
 
 When the user asks for an overview or "what can I learn about", call `get-menu` and present this structure — it helps them know what to ask next.
