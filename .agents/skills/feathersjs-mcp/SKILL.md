@@ -14,10 +14,13 @@ description: >
 
 # FeathersMCP Guide
 
-You have access to the FeathersMCP MCP server, which gives you live access to the complete
-FeathersJS v6 documentation (47 pages across API reference, guides, cookbook, and ecosystem).
-Always use these tools instead of answering from memory — FeathersJS has changed significantly
-across versions and training data is unreliable.
+> **REQUIRED ACTION — do not skip this.**
+> You have MCP tools named `search-doc`, `search-community`, `get-doc`, `get-menu`, `share-knowledge`, and `get-schema` available in your tool palette right now.
+> Before answering ANY FeathersJS question, you **must call at least `search-doc`** (and `search-community` when routing rules below apply).
+> Do not answer from training data, from reading this file, or from memory. Call the MCP tools first, then answer using their results.
+> FeathersJS has changed significantly across versions — your training data is unreliable for it.
+
+This skill gives you live access to the complete FeathersJS v6 documentation (47 pages across API reference, guides, cookbook, and ecosystem) via the FeathersMCP MCP server.
 
 ## How to Use This Skill
 
@@ -40,7 +43,7 @@ This skill activates for any FeathersJS question. Here's what it covers:
 | `get-menu` | Full nav structure — 47 docs across 4 categories | First call when orienting or browsing topics |
 | `search-doc` | Full-text search (FTS5 + BM25) across all docs | Any implementation or concept question |
 | `get-doc` | Fetch a full doc page by `id`, `path`, or `title` | After search, when you need complete examples or full context |
-| `search-community` | Search community tutorials and projects (Cloudflare D1) | Alongside `search-doc` for real-world patterns |
+| `search-community` | Search community tutorials and projects (Cloudflare D1) | When the question involves implementation patterns, integrations, architecture, or how-to approaches (see routing rules below) |
 | `share-knowledge` | Generate a pre-filled GitHub Issue URL for community contribution | When user finishes something worth sharing |
 | `get-schema` | Returns the database column structure | Debugging only — rarely needed |
 
@@ -51,10 +54,36 @@ This skill activates for any FeathersJS question. Here's what it covers:
 Follow this decision tree for every FeathersJS question:
 
 1. **Orientation / "what's available"** → call `get-menu` first
-2. **Any specific concept or implementation** → call `search-doc` with clear keywords
+2. **Route the question** — decide whether to add `search-community` alongside `search-doc`:
+
+   **Call `search-doc` + `search-community` together** (in parallel if possible) when the question matches any of these signals:
+   - Asks **how to implement** or **how to build** something (implementation pattern)
+   - Involves **third-party integrations** — Auth0, OAuth providers, AWS, Firebase, external APIs, etc.
+   - Asks about **architecture, design patterns, or best practices** — RBAC, IAM, permissions, access control, multi-tenancy, etc.
+   - Uses phrases like "how do people…", "what's a good pattern for…", "how would you…", "best way to…"
+   - Mentions **hooks** in the context of authorization, validation, or middleware patterns
+   - Asks about **security, authentication flows, or token handling** beyond basic setup
+
+   **Call `search-doc` only** when:
+   - Asking about a specific API method or config option ("what params does `patch` take?")
+   - Basic concept definition ("what is a service?")
+   - Setup, installation, or troubleshooting
+   - Browsing what's available in the docs
+
+   When in doubt, include `search-community` — it adds context and the cost of an empty result is low.
+
 3. **Search snippet is truncated or you need all code examples** → follow up with `get-doc` using the `id` from search results (fastest and most reliable lookup)
-4. **Complement official docs with community patterns** → call `search-community` in parallel or after `search-doc`
-5. **Feature clearly doesn't exist in docs** → say so explicitly, suggest nearest valid alternative — never fabricate an API
+4. **Feature clearly doesn't exist in docs** → say so explicitly, suggest nearest valid alternative — never fabricate an API
+
+### When to ask a clarifying question before searching
+
+Do not guess when a wrong assumption would lead to a significantly different answer. Ask a brief clarifying question first in these cases:
+
+- **Runtime is ambiguous** — FeathersJS runs on Node.js (default), Bun, Deno, and Cloudflare Workers. If the user asks about setup, deployment, configuration, or runtime-specific behavior without specifying which runtime, ask: *"Which runtime are you targeting — Node.js, Bun, Deno, or Cloudflare Workers? The setup differs for each."* The docs have separate pages per runtime; searching the wrong one wastes context and produces misleading instructions.
+- **Auth provider is unspecified** — "How do I add auth?" could mean local email/password, Auth0, Google OAuth, Firebase, or custom JWT. Ask which provider or strategy before searching.
+- **Scope is too broad to produce a useful answer** — e.g. "How do I use hooks?" covers dozens of patterns. Ask what the hook should do (validate input? enforce permissions? transform output?).
+
+**Do not over-ask.** If the question is specific enough to search productively — even if not perfectly scoped — go ahead and search. Only ask when guessing wrong would produce a substantially different (and potentially confusing) answer. One clarifying question is enough; don't interrogate the user.
 
 Search results truncate content at 1200 characters and show at most 3 code examples per result.
 When the snippet ends with `[truncated — N more chars — use get-doc tool for full content]`, always
@@ -109,7 +138,7 @@ If the user seems new or is asking how to set up FeathersMCP, walk them through 
 
 ### Step 2 — Activate in your IDE
 
-- **Cursor:** Reload window → open MCP settings → confirm `feathersjs` shows up with a green indicator → switch chat to **Agent** mode
+- **Cursor:** Reload window → open **Cursor Settings → Tools & MCP** → find `feathersjs` under *Installed MCP Servers* → make sure the toggle is **enabled** (green) and the server shows a green dot with "7 tools enabled" → switch chat to **Agent** mode. The JSON config alone is not enough — the server must be toggled on in this settings panel.
 - **VS Code + Copilot:** Reload window → `MCP: List Servers` → confirm Running → open Copilot Chat → switch to **Agent** mode → click the Tools icon and enable `feathersjs` tools
 - **Claude Desktop:** Restart the app — tools appear automatically
 
@@ -128,7 +157,8 @@ You should see the AI call `search-doc` or `get-menu` before answering.
 |---------|-----|
 | `spawn npx ENOENT` on macOS | Open your IDE from the terminal: `cursor .` or `code .` so it inherits your shell PATH |
 | Server shows as Stopped | Click it and select Start Server; if that fails, verify `npx` is on your PATH |
-| Tools not appearing in Copilot/Cursor chat | Make sure you're in **Agent** mode, not Ask or Edit mode |
+| Tools not appearing in Cursor chat | First check **Cursor Settings → Tools & MCP** — the `feathersjs` server must be toggled **on** (the toggle next to it should be green). If it's off, enable it. Then make sure you're in **Agent** mode, not Ask or Edit mode. |
+| Tools not appearing in Copilot chat | Make sure you're in **Agent** mode, not Ask or Edit mode |
 | Want a locked version | See **Locked version config** below |
 
 #### Locked version config
@@ -169,17 +199,16 @@ Help users get better results by framing questions to trigger good tool calls:
 
 When a user asks how to build something in FeathersJS:
 
-1. **Search broadly** — call `search-doc` with the core concept (e.g., `"hooks authentication"`)
-2. **Check results** — if the top result snippet is truncated, call `get-doc` with its `id`
-3. **Search community** — call `search-community` with the same query to surface real-world examples
+1. **Clarify if needed** — if the task is runtime-sensitive (setup, deployment, transport, config) and the user hasn't specified Node.js / Bun / Deno / Cloudflare Workers, ask which runtime before searching. Same for auth provider if unspecified. Skip this step if the question is runtime-agnostic (e.g. hooks, services, schemas).
+2. **Search both sources** — call `search-doc` and `search-community` in parallel with the core concept (e.g., `"hooks authentication"`). Implementation questions always warrant both.
+3. **Check results** — if the top result snippet is truncated, call `get-doc` with its `id`
 4. **Synthesize** — combine official doc content and community patterns into a concrete, runnable answer
 5. **Cite sources** — always include the `source_url` from the doc so the user can read further
 
 Example: user asks "how do I add chat moderation hooks?"
-- `search-doc("hooks moderation")` → likely finds hooks API and guides
+- `search-doc("hooks moderation")` + `search-community("moderation hooks")` → call both in parallel
 - `get-doc(id)` → get full hooks page with all code examples
-- `search-community("moderation hooks")` → check for community tutorials
-- Answer: explain `around` hooks + `before` hooks for validation, show TypeScript example, link to source
+- Answer: combine official docs and community patterns, show TypeScript example, link to source
 
 ---
 
@@ -187,7 +216,7 @@ Example: user asks "how do I add chat moderation hooks?"
 
 When a user asks "what is X in FeathersJS" or "explain Y":
 
-- Always call `search-doc` first — never explain from training data alone
+- Always call `search-doc` first — never explain from training data alone. Add `search-community` if the concept involves patterns, integrations, or architecture (see routing rules above).
 - If the question involves multiple related concepts (e.g., "services and hooks"), search for both
 - Explain at the level of detail the user's question implies — a beginner asking "what is a service?" needs a different answer than "what's the difference between `update` and `patch`?"
 - Always ground explanations in retrieved content; quote or paraphrase from the docs
@@ -229,9 +258,9 @@ The link opens a GitHub issue pre-filled with YAML frontmatter and their content
 
 ## Community Search
 
-When a user asks about real-world patterns, case studies, or "how has anyone used X with FeathersJS":
+When the question matches the routing signals above (implementation patterns, integrations, architecture, security flows), call `search-community` alongside `search-doc`:
 
-- Call `search-community` alongside `search-doc`
+- Use the same or similar keywords as `search-doc`
 - Clearly distinguish results: "From the **official docs**: ..." vs "From the **community knowledge base**: ..."
 - If `search-community` returns no results, say so honestly: "No community contributions matched that query yet."
 - If `search-community` returns a response beginning with `Community Search Error:` or `Failed to search community knowledgebase:`, the community database was unreachable — acknowledge this and proceed with official docs only
