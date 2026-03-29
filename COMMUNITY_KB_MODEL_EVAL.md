@@ -143,6 +143,9 @@ Results are split by whether the **`feathersjs-mcp`** agent skill was installed 
 | 2026-03-28 | GitHub Copilot | Gemini 3 Flash | no | C1 | N | `get-menu`, `get-doc` (×2), `search-doc` | Docs/menu only; no community tools. |
 | 2026-03-28 | GitHub Copilot | Gemini 3 Flash | no | C2 | N | `get-menu`, `search-doc` | Docs only. |
 | 2026-03-28 | GitHub Copilot | Gemini 3 Flash | no | C3 | Y | `get-menu`, `search-doc`, `search-community`, `get-doc` (path `api/hooks`) | **Community only on C3** in this batch. |
+| 2026-03-28 | Cursor (Agent) | Composer 2 | no | C1 | N | `search-doc` (×2), `get-doc` | **feathersmcp** / **feathersjsDocs** only — **no** Search Community / Get Community Post in capture; contrasts with **skill-on** C1. |
+| 2026-03-28 | Cursor (Agent) | Composer 2 | no | C2 | N | `search-doc`, `get-doc` | IAM-style RBAC: **Search Doc** + **Get Doc** in one capture; **no community tools**. |
+| 2026-03-28 | Cursor (Agent) | Composer 2 | no | C3 | N | *(none visible)* | Fine-grained permissions (“Guiding auth patterns”, etc.): **no MCP tool strip** in screenshots — treat as **N** for community. |
 
 ### With skill (`feathersjs-mcp` skill installed)
 
@@ -171,6 +174,9 @@ Transcripts show **`Invoked skill: feathersjs-mcp`** where the client reports it
 | 2026-03-29 | GitHub Copilot | Gemini 3 Flash | yes | C1 | N | `search-doc`, `get-doc` (path `cookbook/authentication/auth0`) | Docs only. |
 | 2026-03-29 | GitHub Copilot | Gemini 3 Flash | yes | C2 | N | `search-doc` | Docs only. |
 | 2026-03-29 | GitHub Copilot | Gemini 3 Flash | yes | C3 | N | `search-doc` | CASL/resolver narrative; **no community tools** in trace. |
+| 2026-03-28 | Cursor (Agent) | Composer 2 | yes | C1 | Y | `search-doc` (×2), `search-community`, `get-community-post` | UI: “Search Doc / Search Community / Get Community Post” in **feathersjsDocs** MCP. Answer cites **FeathersJS + Auth0: JWT and Refresh Token Setup** (FeathersMCP KB). |
+| 2026-03-28 | Cursor (Agent) | Composer 2 | yes | C2 | N | `search-doc` | IAM/RBAC answer after **Search Doc** only (no community tools in screenshots). |
+| 2026-03-28 | Cursor (Agent) | Composer 2 | yes | C3 | N | *(not visible)* | Fine-grained permissions pattern in reply; **tool strip not visible** in supplied screenshots — scored **N** for community KB unless you confirm traces. |
 
 #### Skill effect — same models, C1 / C2 / C3 (Y = community tool used)
 
@@ -183,6 +189,7 @@ Transcripts show **`Invoked skill: feathersjs-mcp`** where the client reports it
 | **GPT-5.3 Codex** | N / N / N | **Y** / N / **Y** | **C1 & C3** gain community; **C2** still docs-only. |
 | **Gemini 3.1 Pro** | Y / N / Y | Y / **Y** / Y | **C2 flips N→Y** (community MCP instead of workspace `iam.ts`). |
 | **Gemini 3 Flash** | N / N / Y | N / N / N | **C3 flips Y→N** in trace — with skill, **no** `search-community` on any prompt. |
+| **Composer 2** (Cursor) | **N** / N / N | **Y** / N / N | **Skill lifts C1:** without skill = **Search Doc** + **Get Doc** only; with skill = **Search Community** + **Get Community Post** + cites Auth0 KB post. C2–C3 stay **N** on community in your captures. |
 
 **Legend:** **Y** = `search-community` or `get-community-post` appeared. **N** = official tools or no tools only.
 
@@ -200,8 +207,10 @@ Transcripts show **`Invoked skill: feathersjs-mcp`** where the client reports it
 | **GPT-5.3 Codex** | **C1 & C3** use community; **C2** remains **docs-only** (IAM pattern from guides/API). |
 | **Gemini 3.1 Pro** | **C2** with skill: **only** `search-community` → `get-community-post` (**7**) — fixes prior **workspace `iam.ts`** path without skill. |
 | **Gemini 3 Flash** | With skill, traces are **docs-only** for all three; **without** skill, C3 had used community — **regression on community metric** for this client/model combo. |
+| **Composer 2** (Cursor Agent, skill **on**) | **C1:** MCP trace shows **Search Doc → Search Community → Get Community Post** (“feathersjsDocs”) and answer references **FeathersJS + Auth0: JWT and Refresh Token Setup** (FeathersMCP KB). **C2:** **Search Doc** only in supplied screenshots. **C3:** Substantive hook patterns; **no tool calls visible** in captures—revisit C3 row if you export a full trace. |
+| **Composer 2** (Cursor Agent, skill **off**) | **C1:** **Search Doc** (×2) + **Get Doc** — official docs path only. **C2:** **Search Doc** + **Get Doc** (or prose-only in some crops). **C3:** “Guiding auth patterns” style answer with **no tool UI** in screenshots. Screenshots dated **2026-03-28** (`Screenshot_2026-03-28_at_4.56*.png`). |
 
-*Evidence: user transcripts — skill **on**, 2026-03-29.*
+*Evidence: user transcripts — skill **on**, 2026-03-29; Composer 2 — screenshots **2026-03-28** (with & without skill).*
 
 ---
 
