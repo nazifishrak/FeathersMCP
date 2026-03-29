@@ -37,7 +37,6 @@
   "files": [
     "build",
     "data",
-    "cloud",
     ".agents/skills/feathersjs-mcp",
     "LICENSE",
     "README.md"
