@@ -38,7 +38,7 @@
     "build",
     "data",
     "cloud",
-    ".agents/skills/feathersjs-mcp",
+    ".agents",
     "LICENSE",
     "README.md"
   ],
