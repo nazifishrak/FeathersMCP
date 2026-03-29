@@ -50,9 +50,17 @@ An MCP server that gives AI assistants access to the FeathersJS v6 documentation
 
 That's it — `npx` downloads and runs the package automatically on first use.
 
-### 2. Use MCP tools in chat
+### 2. Enable the server in your IDE
 
-Open your IDE and the FeathersJS documentation tools will be available in chat. Ask your AI assistant about FeathersJS hooks, services, authentication, or any other topic.
+**Cursor:** Open **Cursor Settings → Tools & MCP** → find `feathersjs` under *Installed MCP Servers* → make sure the toggle is **enabled** (green) and it shows a green dot with "7 tools enabled." The JSON config alone is not enough — the server must be toggled on in this settings panel.
+
+**VS Code + Copilot:** Run `MCP: List Servers` from the command palette → confirm `feathersjs` shows as Running → open Copilot Chat → switch to **Agent** mode → click the Tools icon and enable `feathersjs` tools.
+
+**Claude Desktop:** Restart the app — tools appear automatically.
+
+### 3. Use MCP tools in chat
+
+Open your IDE's AI chat (in **Agent** mode for Cursor and VS Code) and the FeathersJS documentation tools will be available. Ask your AI assistant about FeathersJS hooks, services, authentication, or any other topic.
 
 ### Optional: install locally
 
