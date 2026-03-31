@@ -85,7 +85,19 @@ async function handler({ query }: { query: string }) {
 export const searchCommunityTool: ToolDefinition<typeof schema> = {
   name: "search-community",
   description:
-    "Search the FeathersJS community knowledge base for tutorials, projects, and insights other users shared (integrations, edge cases, combinations). You may use this before or after official doc tools—no fixed order. Returns id per hit; use get-community-post with that id for full post text.",
+  "Search real-world FeathersJS solutions from the community.\n\n" +
+  "PRIMARY use cases:\n" +
+  "- Implementation, integrations, and architecture patterns\n" +
+  "- Debugging issues or unexpected behavior\n" +
+  "- Workarounds, fixes, and best practices not in docs\n\n" +
+  "You MUST use this when:\n" +
+  "- The user asks how to implement or integrate something\n" +
+  "- The user reports something not working or asks why\n" +
+  "- The solution is not clearly in a single doc page\n\n" +
+  "After calling:\n" +
+  "- Use `get-community-post` if a result is relevant\n" +
+  "- Include at least one community insight in your answer\n\n" +
+  "Returns: results with id for `get-community-post`.",
   schema,
   handler,
 };
