@@ -25,6 +25,7 @@ Use it whenever you work on FeathersJS—especially hooks, authentication, and v
 - The config file must live at the **workspace root** (see below)—this is the most common reason a server “does not connect.”
 
 ---
+# Setup
 
 ## Put the config at the workspace root
 
