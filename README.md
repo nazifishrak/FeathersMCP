@@ -21,6 +21,7 @@ Use it whenever you work on FeathersJS—especially hooks, authentication, and v
 ## Requirements
 
 - **Node.js** (LTS recommended, e.g. 20.x) so `npx` can run the published package.
+- **npm** (LTS recommended, e.g. 11.x) so `npx` can install the published package.
 - The config file must live at the **workspace root** (see below)—this is the most common reason a server “does not connect.”
 
 ---
