@@ -15,7 +15,7 @@ description: >
 # FeathersMCP Guide
 
 > **REQUIRED ACTION — do not skip this.**
-> You have MCP tools named `search-doc`, `search-community`, `get-doc`, `get-menu`, `share-knowledge`, and `get-schema` available in your tool palette right now.
+> You have MCP tools named `get-menu`, `search-doc`, `get-doc`, `search-community`, `get-community-post`, `share-knowledge`, and `get-schema` available in your tool palette right now.
 > Before answering ANY FeathersJS question, you **must call at least `search-doc`** (and `search-community` when routing rules below apply).
 > Do not answer from training data, from reading this file, or from memory. Call the MCP tools first, then answer using their results.
 > FeathersJS has changed significantly across versions — your training data is unreliable for it.
@@ -46,6 +46,7 @@ This skill activates for any FeathersJS question. Here's what it covers:
 | `search-doc`       | Full-text search (FTS5 + BM25) across all docs                    | Any implementation or concept question                                                                                         |
 | `get-doc`          | Fetch a full doc page by `id`, `path`, or `title`                 | After search, when you need complete examples or full context                                                                  |
 | `search-community` | Search community tutorials and projects (Cloudflare D1)           | When the question involves implementation patterns, integrations, architecture, or how-to approaches (see routing rules below) |
+| `get-community-post` | Fetch a full community post by `id` from `search-community` results | After `search-community`, when a hit looks relevant and you need the full post text before answering                            |
 | `share-knowledge`  | Generate a pre-filled GitHub Issue URL for community contribution | When user finishes something worth sharing                                                                                     |
 | `get-schema`       | Returns the database column structure                             | Debugging only — rarely needed                                                                                                 |
 
@@ -75,7 +76,8 @@ Follow this decision tree for every FeathersJS question:
    When in doubt, include `search-community` — it adds context and the cost of an empty result is low.
 
 3. **Search snippet is truncated or you need all code examples** → follow up with `get-doc` using the `id` from search results (fastest and most reliable lookup)
-4. **Feature clearly doesn't exist in docs** → say so explicitly, suggest nearest valid alternative — never fabricate an API
+4. **Community hit looks promising but the summary is not enough** → follow up with `get-community-post` using the `id` from `search-community`
+5. **Feature clearly doesn't exist in docs** → say so explicitly, suggest nearest valid alternative — never fabricate an API
 
 ### When to ask a clarifying question before searching
 
@@ -207,13 +209,14 @@ When a user asks how to build something in FeathersJS:
 
 1. **Clarify if needed** — if the task is runtime-sensitive (setup, deployment, transport, config) and the user hasn't specified Node.js / Bun / Deno / Cloudflare Workers, ask which runtime before searching. Same for auth provider if unspecified. Skip this step if the question is runtime-agnostic (e.g. hooks, services, schemas).
 2. **Search both sources** — call `search-doc` and `search-community` in parallel with the core concept (e.g., `"hooks authentication"`). Implementation questions always warrant both.
-3. **Check results** — if the top result snippet is truncated, call `get-doc` with its `id`
+3. **Check results** — if the top doc result snippet is truncated, call `get-doc` with its `id`; if a community hit looks relevant, call `get-community-post` with that result `id`
 4. **Synthesize** — combine official doc content and community patterns into a concrete, runnable answer
 5. **Cite sources** — always include the `source_url` from the doc so the user can read further
 
 Example: user asks "how do I add chat moderation hooks?"
 
 - `search-doc("hooks moderation")` + `search-community("moderation hooks")` → call both in parallel
+- `get-community-post(id)` → fetch the full community write-up if one of the hits looks useful
 - `get-doc(id)` → get full hooks page with all code examples
 - Answer: combine official docs and community patterns, show TypeScript example, link to source
 
@@ -269,6 +272,7 @@ The link opens a GitHub issue pre-filled with YAML frontmatter and their content
 When the question matches the routing signals above (implementation patterns, integrations, architecture, security flows), call `search-community` alongside `search-doc`:
 
 - Use the same or similar keywords as `search-doc`
+- If a result looks relevant, call `get-community-post` with its `id` before relying on the summary alone
 - Clearly distinguish results: "From the **official docs**: ..." vs "From the **community knowledge base**: ..."
 - If `search-community` returns no results, say so honestly: "No community contributions matched that query yet."
 - If `search-community` returns a response beginning with `Community Search Error:` or `Failed to search community knowledgebase:`, the community database was unreachable — acknowledge this and proceed with official docs only
