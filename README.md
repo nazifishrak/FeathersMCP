@@ -94,8 +94,6 @@ If both files exist, the project-level file takes priority.
 
 If the server is active, the assistant should call `search-doc` and return a result with a source URL. If no tool is called, check that the server is toggled on in **Settings → Tools & MCP** and that you are in Agent mode, not Ask or Edit mode.
 
-> **Tip:** Type `@feathersjs` in the chat input to explicitly target this MCP server.
-
 ---
 
 ### Claude Desktop
