@@ -17,6 +17,7 @@ AI assistants answering from memory often mix up Feathers versions, invent APIs,
 | No community patterns | Optional community knowledge base (real-world tutorials) |
 
 ---
+# Setup
 
 ## Prerequisites
 
