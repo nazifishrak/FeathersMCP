@@ -7,12 +7,12 @@ labels:
 ---
 
 ---
-title: ""
-author: ""
-tags: []
-date: ""
+title: "Title"
+author: "Author"
+tags: ["tag", "tag2"]
+date: "2026-03-27"
 ---
 
 ### Description
 
-_[Replace this line with your write-up. Use the same structure as a share-knowledge submission: keep the YAML block above filled in (`title` / `author` / `tags` as JSON array, optional `date`), then your markdown under **Description**.]_
+_[Replace this line with your write-up. Fill the YAML block above with (`title` / `author` / `tags` as JSON array, optional `date`), then add your markdown under **Description**.]_
