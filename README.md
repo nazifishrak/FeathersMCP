@@ -84,8 +84,6 @@ You should see a `search-doc` or `get-menu` tool call in the response.
 
 The assistant should call `search-doc` and return a result with a source URL.
 
-> **Tip (Cursor only):** Type `@feathersjs` in the chat input to target this MCP server explicitly.
-
 ---
 
 ### Claude Desktop
