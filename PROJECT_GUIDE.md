@@ -442,7 +442,7 @@ npm run build
 ```json
 {
   "servers": {
-    "feathersjsDocs": {
+    "feathersjs": {
       "type": "stdio",
       "command": "node",
       "args": ["${workspaceFolder}/FeathersMCP/build/index.js"]
@@ -453,14 +453,14 @@ npm run build
 
 **Step 3 — Activate in VS Code:**
 - `Cmd+Shift+P` → `Developer: Reload Window`
-- `Cmd+Shift+P` → `MCP: List Servers` — confirm `feathersjsDocs` shows up with status `Running`
+- `Cmd+Shift+P` → `MCP: List Servers` — confirm `feathersjs` shows up with status `Running`
 - If it shows `Stopped`, click it and select `Start Server`
 - If prompted to trust the server, click **Allow**
 
 **Step 4 — Use in Copilot Chat:**
 - Open the GitHub Copilot Chat panel
 - Switch to **Agent mode** (the dropdown next to the send button)
-- Click the **Tools** icon (🔧) and enable `feathersjsDocs` tools
+- Click the **Tools** icon (🔧) and enable `feathersjs` tools
 - Ask a question — Copilot will call our tools automatically
 
 **Example prompts to test:**
@@ -487,7 +487,7 @@ Add this to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "feathersjs-docs": {
+    "feathersjs": {
       "command": "node",
       "args": ["/absolute/path/to/FeathersMCP/build/index.js"]
     }
@@ -511,7 +511,7 @@ npm run build
 ```json
 {
   "mcpServers": {
-    "feathersjsDocs": {
+    "feathersjs": {
       "command": "node",
       "args": ["/absolute/path/to/FeathersMCP/build/index.js"]
     }
@@ -535,7 +535,7 @@ The config format is identical either way — the only difference is the file lo
 
 **Step 3 — Activate in VS Code:**
 - `Cmd+Shift+P` → `Developer: Reload Window`
-- `Cmd+Shift+P` → `View: Open MCP Settings` — confirm `feathersjsDocs` appears with a green status indicator
+- `Cmd+Shift+P` → `View: Open MCP Settings` — confirm `feathersjs` appears with a green status indicator
 - Confirm all tools are present
 - If it shows an error, verify the absolute path in `mcp.json` is correct and `build/index.js` exists
 
