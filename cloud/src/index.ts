@@ -60,6 +60,53 @@ function isValidGithubIssueUrl(value: string): boolean {
 	}
 }
 
+/**
+ * Sanitizes the user's search query into an FTS5-compatible MATCH expression.
+ *
+ * Current behavior:
+ * 1. Tokenizes by alphanumeric characters.
+ * 2. Filters out single characters and common stop words.
+ * 3. Joins terms with OR to allow broad matching (not requiring all keywords).
+ * 4. Explicitly boosts matches in the 'title' column by mapping terms to title:term.
+ */
+function sanitizeFtsQuery(query: string): string {
+	// Common English stop words.
+	const stopWords = new Set([
+		'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'when',
+		'at', 'by', 'from', 'for', 'in', 'off', 'on', 'over', 'under', 'to',
+		'with', 'is', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+		'do', 'does', 'did', 'can', 'could', 'should', 'will', 'would', 'may', 'might',
+		'must', 'shall', 'about', 'above', 'after', 'again', 'against', 'all', 'am',
+		'any', 'are', 'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below',
+		'between', 'both', 'but', 'by', 'could', 'did', 'do', 'does', 'doing', 'down',
+		'during', 'each', 'few', 'for', 'from', 'further', 'had', 'has', 'have', 'having',
+		'he', 'her', 'here', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'i', 'if',
+		'in', 'into', 'is', 'it', 'its', 'itself', 'me', 'more', 'most', 'my', 'myself',
+		'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or', 'other', 'ought',
+		'our', 'ours', 'ourselves', 'out', 'over', 'own', 'same', 'she', 'should', 'so',
+		'some', 'such', 'than', 'that', 'the', 'their', 'theirs', 'them', 'themselves',
+		'then', 'there', 'these', 'they', 'this', 'those', 'through', 'to', 'too', 'under',
+		'until', 'up', 'very', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'while',
+		'who', 'whom', 'why', 'with', 'would', 'you', 'your', 'yours', 'yourself', 'yourselves'
+	]);
+
+	const words = query
+		.toLowerCase()
+		.replace(/[^a-z0-9\s]/g, ' ')
+		.split(/\s+/)
+		.filter((w) => w.length > 1)
+		.filter((w) => !stopWords.has(w));
+
+	if (words.length === 0) return '';
+
+	// Hybrid search: we search title:term OR term (which searches all columns).
+	// This ensures results with the keyword in the title are prioritized by BM25 ranking.
+	const titleTerms = words.map((w) => `title:${w}`).join(' OR ');
+	const bodyTerms = words.join(' OR ');
+
+	return `${titleTerms} OR ${bodyTerms}`;
+}
+
 // Ingestion validation: coerce external payloads into canonical DB-ready strings.
 function normalizePayload(raw: any): { payload?: IngestPayload; error?: string } {
 	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -102,17 +149,9 @@ export default {
 
 			try {
 				// Sanitize query before passing to FTS5 MATCH.
-				// FTS5 interprets "col:term" as a column-scoped search, so raw agent
-				// queries containing colons (e.g. "real-time:chat") cause
-				// "no such column" errors. Quoting each token prevents this.
-				const ftsQuery = query
-					.split(/\s+/)
-					.map(token => token.replace(/"/g, ''))   // strip any embedded quotes
-					.filter(Boolean)
-					.map(token => `"${token}"`)              // quote each token → phrase match
-					.join(' ');
+				const ftsQuery = sanitizeFtsQuery(query);
 
-				if (!ftsQuery) return new Response('Missing query', { status: 400 });
+				if (!ftsQuery) return Response.json([]);
 
 				// We use FTS5 MATCH for ultra-fast, ranked searching
 				const { results } = await env.DB.prepare(
