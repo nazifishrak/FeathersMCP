@@ -17,7 +17,6 @@ AI assistants answering from memory often mix up Feathers versions, invent APIs,
 | No community patterns | Optional community knowledge base (real-world tutorials) |
 
 ---
-# Setup
 
 ## Prerequisites
 
@@ -27,9 +26,9 @@ AI assistants answering from memory often mix up Feathers versions, invent APIs,
 | [npm](https://www.npmjs.com) (bundled with Node) | https://www.npmjs.com |
 | An MCP-compatible AI client (see [Installation](#installation)) | (n/a) |
 
-**Supported clients:** [VS Code](https://code.visualstudio.com) (with [GitHub Copilot](https://github.com/features/copilot)), [Cursor](https://cursor.com), [Claude Desktop](https://claude.ai/download), [Zed](https://zed.dev), and [any other MCP host](https://modelcontextprotocol.io/clients). Each host uses its own MCP config format (same server, different JSON shape).
+**Supported clients:** [VS Code](https://code.visualstudio.com) (with [GitHub Copilot](https://github.com/features/copilot)), [Cursor](https://cursor.com), [Claude Desktop](https://claude.ai/download), [Zed](https://zed.dev), and [any other MCP host](https://modelcontextprotocol.io/clients).
 
-> The MCP config file must be placed in the **root of the folder you open** in your IDE, not in a subfolder. Putting it in the wrong directory is the most common reason the server fails to connect.
+> Each client uses its own MCP config location. Follow the section for your client below (Step 1 shows the exact file or setting to edit).
 
 ---
 
@@ -39,7 +38,7 @@ The server command is the same everywhere; only the **config file location** and
 
 ### VS Code (GitHub Copilot)
 
-**Step 1.** Create `.vscode/mcp.json` at your project root:
+**Step 1.** Create `.vscode/mcp.json` inside your project folder:
 
 ```json
 {
@@ -53,18 +52,27 @@ The server command is the same everywhere; only the **config file location** and
 }
 ```
 
-**Step 2.** Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`), search **MCP**, and confirm the server appears in the list.
+**Step 2.** Reload the window — open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and run **Developer: Reload Window**.
 
-**Step 3.** In GitHub Copilot Chat, ask:
+**Step 3.** Open the Command Palette again, run **MCP: List Servers**, and confirm `feathersjs` appears in the list.
+- If it shows as **Stopped**, click it and select **Start Server**.
+- If VS Code prompts you to **trust the server**, click **Allow**. Without this the server will not run.
+- If it is listed but disabled, enable it from the same panel.
+
+**Step 4.** Open GitHub Copilot Chat, switch to **Agent** mode, and ask:
 > `What FeathersJS topics are covered in the official docs?`
 
-You should see a `search-doc` or `get-menu` tool call in the response.
+If the server is connected, the assistant should call a tool like `get-menu` or `search-doc`. If no tool call appears, check that the server is running in **MCP: List Servers** and that you are in Agent mode, not Ask or Edit mode.
 
 ---
 
 ### Cursor
 
-**Step 1.** Create `.cursor/mcp.json` at your project root:
+**Step 1.** Create the config file. Two options:
+- **Project only:** `.cursor/mcp.json` inside your project folder (can be committed to git and shared with teammates)
+- **All projects:** `~/.cursor/mcp.json` in your home directory (local to your machine only)
+
+If both files exist, the project-level file takes priority.
 
 ```json
 {
@@ -77,22 +85,30 @@ You should see a `search-doc` or `get-menu` tool call in the response.
 }
 ```
 
-**Step 2.** Reload the window (`Cmd+Shift+P` / `Ctrl+Shift+P` → **Developer: Reload Window**).
+**Step 2.** Reload the window — open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and run **Developer: Reload Window**.
 
-**Step 3.** Open Cursor Chat and ask:
+**Step 3.** Open **Cursor Settings → Tools & MCP** and confirm `feathersjs` appears with a green status indicator. If the toggle next to it is off, turn it on. Adding the config file alone is not enough — the server must be enabled in this panel.
+
+**Step 4.** Open Cursor Chat in **Agent** mode and ask:
 > `How do Feathers hooks work in v6?`
 
-The assistant should call `search-doc` and return a result with a source URL.
+If the server is active, the assistant should call `search-doc` and return a result with a source URL. If no tool is called, check that the server is toggled on in **Settings → Tools & MCP** and that you are in Agent mode, not Ask or Edit mode.
+
+> **Tip:** Type `@feathersjs` in the chat input to explicitly target this MCP server.
 
 ---
 
 ### Claude Desktop
 
-**Step 1.** Open your Claude Desktop config file:
+**Easier path — Desktop Extensions:** If you see an **Extensions** option in Claude Desktop's settings, that is the simplest way to add an MCP server without editing config files. Check the [Claude help center](https://support.claude.ai/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop) first to see if it is available for your version.
+
+**Manual path — config file:**
+
+**Step 1.** Open the config file for your OS:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-**Step 2.** Add the server entry:
+**Step 2.** Add the server entry (create the file if it does not exist):
 
 ```json
 {
@@ -105,16 +121,48 @@ The assistant should call `search-doc` and return a result with a source URL.
 }
 ```
 
-**Step 3.** Restart Claude Desktop. The first run downloads the package automatically. Ask:
+**Step 3.** Fully restart Claude Desktop — quit and reopen, do not just reload. The first run downloads the package automatically.
+
+**Step 4.** Ask a test question:
 > `What authentication strategies does Feathers v6 support?`
 
-See [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user) for more detail.
+If no tool is called, check Claude's MCP logs (**Help → Open Logs Folder**) for connection errors. See [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user) for more detail.
 
 ---
 
-### Zed and other MCP hosts
+### Zed
 
-Use your client’s MCP settings (often a JSON file or UI) and register the same command: `npx` with args `["feathersjs-mcp@latest"]` (or `["-y", "feathersjs-mcp@latest"]` where `npx` needs `-y`). The [MCP clients list](https://modelcontextprotocol.io/clients) links each host’s installation docs.
+**Step 1.** Add the server to your Zed settings. Open **Zed Settings** (`Cmd+,`) and add a `context_servers` block:
+
+```json
+{
+  "context_servers": {
+    "feathersjs": {
+      "command": {
+        "path": "npx",
+        "args": ["-y", "feathersjs-mcp@latest"]
+      }
+    }
+  }
+}
+```
+
+Alternatively, open the **Agent Panel** (`Cmd+?`), click the settings icon, and use **Add Custom Server** to register the same command.
+
+**Step 2.** Check the status indicator next to the server name in the Agent Panel. A green dot means it is active. If it is grey or shows an error, verify `npx` is on your PATH by opening Zed from a terminal: `zed .`
+
+**Step 3.** Note that Zed may ask you to **approve tool calls** before they run — this is expected. Confirm when prompted.
+
+**Step 4.** Ask a test question in the Agent Panel:
+> `What topics are covered in the official FeathersJS v6 docs?`
+
+If the server is connected, it should call `get-menu` or `search-doc`. Mentioning `feathersjs` by name in your prompt can help Zed route to the right server.
+
+---
+
+### Other MCP hosts
+
+Register the same command — `npx` with args `["-y", "feathersjs-mcp@latest"]` — using your client's MCP config format. The [MCP clients list](https://modelcontextprotocol.io/clients) links setup docs for each supported host.
 
 ---
 
@@ -161,11 +209,11 @@ You don't need to mention tool names. The server picks the right one based on yo
 
 ## Troubleshooting
 
-**Server not connecting / tools never appear**  
-Move the MCP JSON file to the **root of the folder you opened** in the IDE, then reload the window.
+**Server not connecting / tools never appear**
+Check the client-specific step for your MCP host above — most clients require you to manually enable or start the server after adding the config file. Also verify the config file is in the correct location for your client (see the table in Prerequisites).
 
-**macOS: `spawn npx ENOENT`**  
-Open your project from a terminal (`cursor .` / `code .`) so the IDE inherits your shell `PATH`. Or install locally and use the full path to `node` (from `which node`):
+**macOS: `spawn npx ENOENT`**
+Open your project from a terminal (`cursor .` / `code .` / `zed .`) so the IDE inherits your shell `PATH`. Or install locally and use the full path to `node` (from `which node`):
 
 ```json
 {
@@ -177,6 +225,9 @@ Open your project from a terminal (`cursor .` / `code .`) so the IDE inherits yo
   }
 }
 ```
+
+**Tools appear but no tool is called in chat**
+Make sure you are in **Agent** mode — tools are not available in Ask or Edit mode. In Cursor, also verify the server toggle is on in **Settings → Tools & MCP**.
 
 ---
 
