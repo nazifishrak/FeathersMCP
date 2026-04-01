@@ -1,6 +1,6 @@
 {
   "servers": {
-    "feathersjsDocs": {
+    "feathersjs": {
       "type": "stdio",
       "command": "node",
       "args": [
