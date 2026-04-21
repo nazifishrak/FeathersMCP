@@ -2,6 +2,8 @@
 
 A complete walkthrough of how the FeathersJS MCP Server works, from data ingestion to serving search results to LLM clients.
 
+**Audience:** Developers who work **inside this repository** (source, tests, Worker, ingestion). If you only **consume** the published `feathersjs-mcp` package from npm, use the root **README.md** instead—you do not need this guide for day-to-day use.
+
 ---
 
 ## Table of Contents
@@ -62,7 +64,7 @@ FeathersMCP is an **MCP (Model Context Protocol) server** that gives LLMs (like 
 │                    MCP Server (stdio)                        │
 │  src/index.ts                                               │
 │                                                             │
-│  6 tools:                                                   │
+│  7 tools:                                                   │
 │    🔍 search-doc        — Full-text search with BM25 ranking │
 │    📄 get-doc           — Retrieve full content of a page   │
 │    📋 get-schema        — Show database structure           │
@@ -71,6 +73,7 @@ FeathersMCP is an **MCP (Model Context Protocol) server** that gives LLMs (like 
 │                           contribute to the community KB    │
 │    🔎 search-community  — Search the Cloudflare-hosted      │
 │                           community knowledge base          │
+│    📰 get-community-post — Fetch full community post by id │
 │                                                             │
 │  Communicates via JSON-RPC over stdin/stdout                 │
 └─────────────────────┬───────────────────────────────────────┘
@@ -104,11 +107,11 @@ Our ingestion script reads those 4 tables and creates:
 2. A **`documents_fts`** FTS5 virtual table for full-text search with BM25 relevance ranking
 
 ### Stage 3: MCP Server (`npm start`)
-The server starts, connects to the bundled SQLite database, and exposes 6 tools over the MCP protocol (JSON-RPC over stdio).
+The server starts, connects to the bundled SQLite database, and exposes 7 tools over the MCP protocol (JSON-RPC over stdio).
 
 ### Stage 4: LLM Interaction
 1. LLM client (e.g., Claude Desktop) connects to our server
-2. Client calls `tools/list` to discover our 6 tools
+2. Client calls `tools/list` to discover our 7 tools
 3. User asks "How do hooks work in Feathers?"
 4. LLM calls `search-doc` with `{"query": "hooks"}`
 5. We run an FTS5 search, return truncated results
@@ -131,7 +134,8 @@ FeathersMCP/
 │   │   ├── get-schema.ts         # MCP tool: show database structure
 │   │   ├── search-doc.ts         # MCP tool: full-text search
 │   │   ├── share-knowledge.ts    # MCP tool: generate GitHub Issue URL
-│   │   └── search-community.ts   # MCP tool: query community knowledge base
+│   │   ├── search-community.ts   # MCP tool: query community knowledge base
+│   │   └── get-community-post.ts # MCP tool: fetch full community post by id
 │   ├── types/
 │   │   └── tool.ts               # TypeScript types for tool definitions
 │   ├── scripts/
@@ -139,7 +143,7 @@ FeathersMCP/
 │   │   └── drop-tables.ts       # Utility: reset tables for re-ingestion
 │   └── tests/
 │       ├── test-search.ts        # Smoke test: database queries
-│       ├── test-mcp-protocol.ts  # Integration test: full MCP protocol (20 checks)
+│       ├── test-mcp-protocol.ts  # Integration test: full MCP protocol (stdio)
 │       ├── verify-css-fix.ts     # Verification: CSS noise removal
 │       └── full-pipeline-test.ts # End-to-end pipeline test
 ├── cloud/                        # Cloudflare Worker (community knowledge base)
@@ -147,6 +151,9 @@ FeathersMCP/
 │   ├── wrangler.toml            # Cloudflare Worker config (name, D1 binding)
 │   └── src/
 │       └── index.ts             # Worker: GET /search, POST /ingest (auth required)
+├── docs/
+│   ├── project/                 # Project docs (handover, setup, architecture — this guide)
+│   └── operations/              # DevOps: CI/CD, releases, D1 / Worker operations
 ├── data/
 │   └── contents.sqlite           # Pre-built database (bundled with package)
 ├── build/                        # Compiled JS output (git-ignored)
@@ -283,7 +290,7 @@ Generates a pre-filled GitHub Issue URL that community members can click to subm
 
 **Input schema:** `{ title, author, content, tags }`
 
-The handler formats the contribution as YAML frontmatter + Markdown, constructs a `https://github.com/nazifishrak/FeathersMCP/issues/new?...&labels=community-contribution` link. Ingestion runs when a maintainer **closes** the issue and both labels are present: `community-contribution` and `approved-post`; then `ingest-to-cloudflare.yml` POSTs to the Worker, which upserts by GitHub issue URL when the same issue is processed again.
+The handler formats the contribution as YAML frontmatter + Markdown, constructs a `https://github.com/daffl/FeathersMCP/issues/new?...&labels=community-contribution` link. Ingestion runs when a maintainer **closes** the issue and both labels are present: `community-contribution` and `approved-post`; then `ingest-to-cloudflare.yml` POSTs to the Worker, which upserts by GitHub issue URL when the same issue is processed again.
 
 ---
 
@@ -292,6 +299,14 @@ The handler formats the contribution as YAML frontmatter + Markdown, constructs 
 Makes a live `fetch()` to the Cloudflare Worker (`GET /search?q=<query>`) and returns Markdown-formatted results. Handles network errors gracefully by returning descriptive text instead of throwing.
 
 **Input schema:** `{ query }`
+
+---
+
+### `src/tools/get-community-post.ts` — Get Community Post Tool
+
+Fetches a single community contribution by numeric `id` (from `search-community` results). Calls the Worker at `GET /community-post?id=<id>` and returns full post JSON or a structured error if the post is missing or the Worker is unreachable.
+
+**Input schema:** `{ id }` (number)
 
 ---
 
@@ -306,7 +321,7 @@ Two endpoints backed by a Cloudflare D1 (SQLite) database:
 
 ### `src/tools/index.ts` — Tool Barrel
 
-Simple barrel file that imports all 6 tools and exports them as an array. This is what `src/index.ts` imports to register everything with the MCP server.
+Simple barrel file that imports all 7 tools and exports them as an array. This is what `src/index.ts` imports to register everything with the MCP server.
 
 ---
 
@@ -359,7 +374,7 @@ The biggest file. Reads raw Nuxt Content data and transforms it into our searcha
 | File | What It Tests | Run With |
 |------|-------------|----------|
 | `test-search.ts` | Core database functions: `getSchema()`, `getMenuStructure()`, `searchDocumentation()` with 5 different queries | `npm run test:search` |
-| `test-mcp-protocol.ts` | Full MCP protocol over stdio: initialize handshake, tool listing (6 tools), all tool calls, response validation. Exits with code 1 on any failure. | `npm run test:mcp` |
+| `test-mcp-protocol.ts` | Full MCP protocol over stdio: initialize handshake, tool listing (7 tools), all tool calls, response validation. Exits with code 1 on any failure. | `npm run test:mcp` |
 | `verify-css-fix.ts` | Checks every document for CSS noise artifacts, validates content quality | `npm run test:css` |
 | `full-pipeline-test.ts` | End-to-end: drops tables, re-ingests, verifies counts, tests incremental updates, content quality, FTS integrity, search relevance | `npm run test:pipeline` |
 
@@ -428,9 +443,9 @@ Client                          Server
   │                                │
 ```
 
-### Connecting to GitHub Copilot in VS Code (Primary Method)
+### Connecting to GitHub Copilot in VS Code
 
-This is the method that works for our team. VS Code reads MCP server config from a `.vscode/mcp.json` file in the workspace root.
+VS Code reads MCP server config from a `.vscode/mcp.json` file in the **workspace root** (the folder you opened in the editor).
 
 **Step 1 — Build the server:**
 ```bash
@@ -438,14 +453,14 @@ cd FeathersMCP
 npm run build
 ```
 
-**Step 2 — The config file already exists** at `.vscode/mcp.json` in this repo:
+**Step 2 — Example `.vscode/mcp.json`** when this repository is the opened workspace (paths are relative to that root):
 ```json
 {
   "servers": {
     "feathersjs": {
       "type": "stdio",
       "command": "node",
-      "args": ["${workspaceFolder}/FeathersMCP/build/index.js"]
+      "args": ["${workspaceFolder}/build/index.js"]
     }
   }
 }
@@ -473,7 +488,7 @@ What FeathersJS services are available?
 **Troubleshooting:**
 | Problem | Fix |
 |---------|-----|
-| Server not in MCP: List Servers | Make sure the workspace folder is `MVP/` (not `FeathersMCP/`) |
+| Server not in MCP: List Servers | Open the **repository root** in VS Code (the folder that contains `package.json`, `build/`, and `.vscode/mcp.json`), not a parent or child folder only. |
 | Server stopped/won't start | Run `npm run build` then `MCP: Reset Cached Tools` |
 | Tools not appearing in chat | Switch to Agent mode in Copilot Chat |
 | Unknown config setting warning | Ignore it — the old `github.copilot.advanced.mcpServers` key is deprecated |
@@ -521,7 +536,7 @@ npm run build
 
 Replace `/absolute/path/to/` with the actual path. For example:
 ```
-/Users/yourname/Documents/CPSC_319/FeathersMCP/build/index.js
+/path/to/FeathersMCP/build/index.js
 ```
 
 **Where to place the file** depends on whether you want the server available to one project or all of them:
@@ -533,9 +548,9 @@ Replace `/absolute/path/to/` with the actual path. For example:
 
 The config format is identical either way — the only difference is the file location.
 
-**Step 3 — Activate in VS Code:**
+**Step 3 — Activate in Cursor:**
 - `Cmd+Shift+P` → `Developer: Reload Window`
-- `Cmd+Shift+P` → `View: Open MCP Settings` — confirm `feathersjs` appears with a green status indicator
+- Open **Cursor Settings → Tools & MCP** — confirm `feathersjs` appears with a green status indicator
 - Confirm all tools are present
 - If it shows an error, verify the absolute path in `mcp.json` is correct and `build/index.js` exists
 

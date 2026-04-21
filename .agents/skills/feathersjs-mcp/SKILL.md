@@ -262,6 +262,7 @@ When the user finishes building something interesting (feature, tutorial, integr
    - **Tags** — relevant topics (e.g., `["hooks", "authentication", "jwt"]`)
 3. Call `share-knowledge` with these four fields
 4. **In your reply, include the generated URL as a full clickable Markdown link** and tell the user to click it to submit — do not say "I shared it" since clicking the link is required to actually submit
+5. If the tool output warns that the body was **truncated** for GitHub's URL length limit, tell the user to paste the **full** Markdown into the issue after it opens so nothing is lost.
 
 The link opens a GitHub issue pre-filled with YAML frontmatter and their content. When a maintainer closes it (with `community-contribution` and `approved-post`), the contribution is ingested into the community knowledge base.
 

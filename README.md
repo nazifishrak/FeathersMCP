@@ -98,10 +98,6 @@ If the server is active, the assistant should call `search-doc` and return a res
 
 ### Claude Desktop
 
-**Easier path — Desktop Extensions:** If you see an **Extensions** option in Claude Desktop's settings, that is the simplest way to add an MCP server without editing config files. Check the [Claude help center](https://support.claude.ai/en/articles/10949351-getting-started-with-local-mcp-servers-on-claude-desktop) first to see if it is available for your version.
-
-**Manual path — config file:**
-
 **Step 1.** Open the config file for your OS:
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
@@ -246,7 +242,22 @@ Make sure you are in **Agent** mode — tools are not available in Ask or Edit m
 ## Links
 
 - **npm package:** https://www.npmjs.com/package/feathersjs-mcp
-- **GitHub repo:** https://github.com/nazifishrak/FeathersMCP
+- **GitHub repo:** https://github.com/daffl/FeathersMCP
 - **FeathersJS v6 docs:** https://feathersjs.com / https://v6.feathersjs.com
 - **MCP standard:** https://modelcontextprotocol.io
 - **Agent skills:** https://agentskills.io
+
+## Repository documentation (optional — for people working in the repo)
+
+If you only **use** FeathersMCP from npm (for example `npx feathersjs-mcp` in your MCP config), you do **not** need anything under `docs/`—the sections above are enough.
+
+The `docs/` folder supports **transfer of ownership, onboarding new maintainers, and ongoing operations**. Layout: **`docs/project/`** (ownership transfer, setup, architecture) and **`docs/operations/`** (CI/CD, releases, D1 — DevOps-style docs for maintainers).
+
+| Document | Who it is for |
+|----------|----------------|
+| [docs/project/HANDOVER.md](docs/project/HANDOVER.md) | Incoming maintainers — scope, limitations, operational ownership |
+| [docs/project/SETUP.md](docs/project/SETUP.md) | Developers — clone, build, and verify from a clean machine |
+| [docs/project/PROJECT_GUIDE.md](docs/project/PROJECT_GUIDE.md) | Developers — architecture and data flow |
+| [docs/operations/CI_CD.md](docs/operations/CI_CD.md) | Maintainers — GitHub Actions |
+| [docs/operations/PUBLISHING_SKILL.md](docs/operations/PUBLISHING_SKILL.md) | Maintainers — npm and skill release |
+| [docs/operations/CLOUD_DATABASE.md](docs/operations/CLOUD_DATABASE.md) | Maintainers — D1 reset and schema |
