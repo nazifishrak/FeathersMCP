@@ -22,7 +22,7 @@ npx wrangler d1 execute feathermcp-db --local --file=./schema.sql
 
 4. **Re-ingest data** if you rely on `/ingest` or other pipelines; resetting removes all rows.
 
-5. **Deploy the Worker** when [`src/index.ts`](src/index.ts) or other Worker code has changed, or to ensure production runs the same revision as your repo. D1 SQL applies only to the database; the HTTP API lives in the Worker. From `cloud/`:
+5. **Deploy the Worker** when [`cloud/src/index.ts`](../../cloud/src/index.ts) or other Worker code has changed, or to ensure production runs the same revision as your repo. D1 SQL applies only to the database; the HTTP API lives in the Worker. From `cloud/`:
 
 ```bash
 npx wrangler deploy
@@ -34,6 +34,6 @@ After schema changes that affect ingest (for example the partial unique index an
 
 ## Unique `github_issue_url` (ingest idempotency)
 
-[`schema.sql`](schema.sql) defines a **partial** unique index on non-empty `github_issue_url`: each real GitHub issue URL may appear once; many rows may still have NULL or empty URLs.
+[`cloud/schema.sql`](../../cloud/schema.sql) defines a **partial** unique index on non-empty `github_issue_url`: each real GitHub issue URL may appear once; many rows may still have NULL or empty URLs.
 
 If your D1 was created before that index existed, run the same **reset + `schema.sql`** flow above (or equivalent) so the index is recreated—then re-ingest rows as needed.

@@ -16,6 +16,9 @@ dist/
 # IDE
 .idea/
 
+# Cloudflare Wrangler local state (not for git)
+cloud/.wrangler/
+
 # Internal docs (not for GitHub)
 EXPLANATION_FOR_NAM.md
 MVP_STATUS_AND_TODO.md

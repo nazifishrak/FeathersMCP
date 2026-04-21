@@ -14,7 +14,7 @@ export default function installSkill() {
   // Verify the bundled skill exists
   if (!existsSync(SOURCE_FILE)) {
     console.error(`Error: bundled skill not found at ${SOURCE_FILE}`);
-    console.error("This is a packaging error — please open an issue at https://github.com/nazifishrak/FeathersMCP/issues");
+    console.error("This is a packaging error — please open an issue at https://github.com/daffl/FeathersMCP/issues");
     process.exit(1);
   }
 

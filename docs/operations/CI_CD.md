@@ -2,7 +2,7 @@
 
 ## Pipeline Link
 
-**GitHub Actions:** <https://github.com/nazifishrak/FeathersMCP/actions>
+**GitHub Actions:** <https://github.com/daffl/FeathersMCP/actions>
 
 | Workflow | File | Runs on |
 |---|---|---|
@@ -34,10 +34,11 @@ Runs on every push to `main` and on every pull request. This workflow ensures th
 6. **Test MCP protocol compliance** — runs `npm run test:mcp`, which:
    - Spawns the MCP server (`node build/index.js`) over stdio.
    - Sends JSON-RPC `initialize`, `tools/list`, and `tools/call` messages.
-   - Validates all 4 tools are registered (`get-schema`, `get-menu`, `search-doc`, `get-doc`).
-   - Tests search with category filters, empty results, content truncation limits, and CSS noise stripping.
-   - Tests document retrieval by title, path, and id, including not-found and missing-argument error handling.
+   - Validates all **7** tools are registered (`get-schema`, `get-menu`, `search-doc`, `get-doc`, `share-knowledge`, `search-community`, `get-community-post`).
+   - Tests `search-doc` with category filters, empty results, content truncation limits, and CSS noise stripping.
+   - Tests `get-doc` by title, path, and id, including not-found and missing-argument error handling.
    - Verifies `get-doc` returns full untruncated content vs. `search-doc` snippets.
+   - Tests `share-knowledge` (GitHub issue URL), `search-community`, and `get-community-post` (validation and id path).
    - Checks base64 data URI stripping and response size reasonableness.
 
 ### 2. Release (`release.yml`)
@@ -137,8 +138,8 @@ The npm package (`feathersjs-mcp`) contains `build/` and `data/` only. Dependenc
 
 Automated tests run in CI on every push and pull request. Evidence can be found in the **Actions** tab of the GitHub repository:
 
-- **Build & Test workflow runs:** <https://github.com/nazifishrak/FeathersMCP/actions/workflows/build-and-test.yml>
-- **Release workflow runs:** <https://github.com/nazifishrak/FeathersMCP/actions/workflows/release.yml>
+- **Build & Test workflow runs:** <https://github.com/daffl/FeathersMCP/actions/workflows/build-and-test.yml>
+- **Release workflow runs:** <https://github.com/daffl/FeathersMCP/actions/workflows/release.yml>
 - **npm package:** <https://www.npmjs.com/package/feathersjs-mcp>
 
 Each workflow run shows step-by-step logs including full test output with pass/fail counts.
